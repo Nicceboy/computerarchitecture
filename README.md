@@ -35,7 +35,7 @@
 ```
 Command can be 1, 2 or 3
  1. Change trackables to be followed
- 2. Give words in watch list
+ 2. Give trackables in watch list
 
 ExtraInfo is info needed for different module (Twitter module will need Url, Directory needs filepath)
 
