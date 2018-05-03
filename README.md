@@ -38,7 +38,58 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
 
 **Server to client Json:**
 
+```javascript
+{
+  "ResponseType": 1,
+  "ModuleList": [
+    {
+      "ModuleName": "Twitter",
+      "ModuleUsage": "This module needs twitter username",
+      "WatchList": [
+        {
+          "ModuleTarget": "OmenatwitterZ",
+          "Words": [
+            "Omena",
+            "Appelsiini"
+          ]
+        },
+        {
+          "ModuleTarget": "AppelsiinitwitterZ",
+          "Words": [
+            "Päärynä",
+            "Kiiwi"
+          ]
+        }
+      ]
+    },
+    {
+      "ModuleName": "Directory",
+      "ModukeUsage": "This module needs filepath to directory",
+      "WatchList": [
+        {
+          "ModuleTarget": "C:/User/Directory",
+          "Words": [
+            "Päärynä",
+            "Kiiwi"
+          ]
+        },
+        {
+          "ModuleTarget": "C:/Paula/Documents",
+          "Words": [
+            "Hevonen",
+            "Koira"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
 
+ResponseType can be 1, 2 and 3
+1: Added words to watch list
+2: Removed words from watch list
+3: Giving detailed list of words in watch list
 
 ### How do I get set up? ###
 
