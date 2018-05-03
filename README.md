@@ -87,9 +87,9 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
 ```
 
 ResponseType can be 1, 2 and 3
-1: Added words to watch list
-2: Removed words from watch list
-3: Giving detailed list of words in watch list
+*1: Added words to watch list
+*2: Removed words from watch list
+*3: Giving detailed list of words in watch list
 
 ### How do I get set up? ###
 
