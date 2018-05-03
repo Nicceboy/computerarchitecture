@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Built-By: juustila
+Bundle-Description: An API to access keyword monitoring functionality
+Bundle-License: GPL
+Bundle-ManifestVersion: 1
+Bundle-Name: keywordclient
+Bundle-SymbolicName: keywordclient
+Export-Package: keywordclient;version="1.1.1"

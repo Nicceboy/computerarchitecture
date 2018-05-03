@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.anttijuustila.wordwatch.MainActivity">
+
+    <LinearLayout
+        android:layout_width="370dp"
+        android:layout_height="503dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/editorWord"
+                android:layout_width="match_parent"
+                android:maxLines="1"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:text="" />
+
+            <Button
+                android:id="@+id/buttonAdd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:text="@string/add_string" />
+
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/listWords"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="4dp"
+            android:layout_height="213dp" />
+
+        <EditText
+            android:id="@+id/textAlerts"
+            android:layout_width="match_parent"
+            android:layout_height="166dp"
+            android:ems="10"
+            android:enabled="false"
+            android:inputType="textMultiLine"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/buttonConnect"
+                android:layout_width="189dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:text="@string/connect_string" />
+
+            <Button
+                android:id="@+id/buttonDisconnect"
+                android:layout_width="167dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:text="@string/disconnect_string" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</android.support.constraint.ConstraintLayout>

@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">WordWatch</string>
+    <string name="name_string">Word to watch</string>
+    <string name="add_string">Add</string>
+    <string name="word_string">Word:</string>
+    <string name="connect_string">Connect</string>
+    <string name="disconnect_string">Disconnect</string>
+    <string name="cannot_intialize_watcher">Could not initialize the Watcher client. Check your settings.</string>
+    <string name="cannot_connect_watcher">Cannot connect the Watcher client. Check your settings.</string>
+    <string name="status_connected">Connected to watcher service.</string>
+    <string name="status_disconnected">Disconnected.</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="keyword_string">Keyword</string>
+    <string name="found_in_string"> found in: </string>
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+
+    <string name="pref_title_server_settings">Server settings</string>
+    <string name="pref_default_server_address">192.168.1.1</string>
+    <string name="action_settings">Settings</string>
+    <string name="pref_default_server_path">/Users/anttijuustila/Documents/test</string>
+    <string name="pref_title_server_path_settings">Path to watch</string>
+
+
+</resources>
