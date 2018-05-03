@@ -2,7 +2,7 @@
 ### Json Protocols ###
 
 **Client to server Json:**
-
+```javascript
 {
   "Command": 1,
   "WordsForModule": [
@@ -28,7 +28,7 @@
     }
   ]
 }
-
+```
 Command can be 1, 2 or 3
 1: Add word to watch list
 2: Remove word from watch list
