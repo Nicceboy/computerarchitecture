@@ -44,6 +44,7 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
   "ModuleList": [
     {
       "ModuleName": "Twitter",
+      "ModuleDesc": "This module will search/watch words found in twitter from specific username",
       "ModuleUsage": "This module needs twitter username",
       "WatchList": [
         {
@@ -64,6 +65,7 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
     },
     {
       "ModuleName": "Directory",
+      "ModuleDesc": "This module will search/watch directory for words in either name of file or in the content of file from specific directory",
       "ModukeUsage": "This module needs filepath to directory",
       "WatchList": [
         {
