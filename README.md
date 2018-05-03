@@ -84,7 +84,12 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
         }
       ]
     }
-  ]
+  ],
+  "NotificationContent": {
+    "ModuleName": "Twitter",
+    "ModuleTarget": "Paukku",
+    "Keyword": "Hevonen"
+  }
 }
 ```
 
