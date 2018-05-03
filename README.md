@@ -1,28 +1,44 @@
 # README #
+### Json Protocols ###
 
-**Keywords** is a system for watching keywords. The system comprises of several components, which enable watching if specific keywords are mentioned in file system documents.
+**Client to server Json:**
 
-Apps can add watches for specific *Paths* to watch using a central service. For the Path, apps can  specify the *Keywords* of interest. When the specified keywords are mentioned in any file, the apps will get notified by the watch service.
+{
+  "Command": 1,
+  "WordsForModule": [
+    {
+      "WordsAndModulePair": [
+        {
+          "Keywords": [
+            "Word1",
+            "Word2"
+          ],
+          "Modules": [
+            {
+              "ModuleName": "Twitter",
+              "ExtraInfo": "OmenaTwitterZ"
+            },
+            {
+              "ModuleName": "Directory",
+              "ExtraInfo": "C:/User/Directory"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 
-If you want to build and test the apps, you will need:
+Command can be 1, 2 or 3
+1: Add word to watch list
+2: Remove word from watch list
+3: Give words in watch list
 
-* JDK 1.8 to build and run the service
-* Android Studio to build the Android app
-* An IDE like Eclipse or text editor to view and edit the code.
+ExtraInfo is info needed for different module (Twitter module will need Url, Directory needs filepath)
 
-*The code here has been created for educational purposes, and the apps (probably) have no other value for anyone.*
+**Server to client Json:**
 
-*(c) Antti Juustila, Degree Program of Information Processing Science, University of Oulu, Finland.*
 
-### What is this repository for? ###
-
-Repository includes following components: 
-
-* **KeywordServer** which implements a service for watching keywords in the machine where the service is located or service has access to.
-* **KeywordClient**, a client API for using the keyword service. You cannot run the client by itself, but it is used in developing apps which use the service.
-* **WordWatch**, An Android app, using the Keyword Client API to access the service.
-
-Additionally, the code uses the **json-simple** library (see below).
 
 ### How do I get set up? ###
 
@@ -60,21 +76,7 @@ If you run the Android app on a real device, make sure to follow these steps:
 
 Firewalls may prevent the connection between the devices. If you can edit your firewall settings, open the port 10000 the service is using to accept incoming connections.
 
-### Known issues ###
-
-There are some known issues:
-
-* When the Android app is closed, it does not save the keywords to watch. When started again, you will need to enter the keywords again.
-* You cannot edit nor remove the keywords entered in the list. This is a feature in the roadmap.
-* It is not possible to silence The Scream.... :o
-* ...and some more...
-
 ### Contribution guidelines ###
 
 * TBD
-
-### Who do I talk to? ###
-
 * Antti Juustila
-* firstname.lastname@oulu.fi
-
