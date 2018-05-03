@@ -7,11 +7,15 @@
   "Command": 1,
   "WordsForModule": [
     {
-      "WordsAndModulePair": [
+      "TrackableAndModulePair": [
         {
-          "Keywords": [
+          "TrackablesToAdd": [
             "Word1",
             "Word2"
+          ],
+	   "TrackablesToRemove": [
+            "Word3",
+            "Word4"
           ],
           "Modules": [
             {
@@ -30,9 +34,8 @@
 }
 ```
 Command can be 1, 2 or 3
- 1. Add word to watch list
- 2. Remove word from watch list
- 3. Give words in watch list
+ 1. Change trackables to be followed
+ 2. Give words in watch list
 
 ExtraInfo is info needed for different module (Twitter module will need Url, Directory needs filepath)
 
@@ -41,6 +44,7 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
 ```javascript
 {
   "ResponseType": 1,
+  "AdditionalInfo": "Error on adding",
   "ModuleList": [
     {
       "ModuleName": "Twitter",
@@ -49,14 +53,14 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
       "WatchList": [
         {
           "ModuleTarget": "OmenatwitterZ",
-          "Words": [
+          "Trackables": [
             "Omena",
             "Appelsiini"
           ]
         },
         {
           "ModuleTarget": "AppelsiinitwitterZ",
-          "Words": [
+          "Trackables": [
             "Päärynä",
             "Kiiwi"
           ]
@@ -70,14 +74,14 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
       "WatchList": [
         {
           "ModuleTarget": "C:/User/Directory",
-          "Words": [
+          "Trackables": [
             "Päärynä",
             "Kiiwi"
           ]
         },
         {
           "ModuleTarget": "C:/Paula/Documents",
-          "Words": [
+          "Trackables": [
             "Hevonen",
             "Koira"
           ]
@@ -88,16 +92,17 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
   "NotificationContent": {
     "ModuleName": "Twitter",
     "ModuleTarget": "Paukku",
-    "Keyword": "Hevonen"
+    "Trackable": "Hevonen"
   }
 }
 ```
 
-ResponseType can be 1, 2 and 3
- 1. Added words to watch list
- 2. Removed words from watch list
- 3. Giving detailed list of words in watch list
-
+ResponseType can be 1, 2, 3 and 4
+ 1. Change succeed
+ 2. Giving detailed list of words in watch list
+ 3. Trackable found
+ 4. Error
+ 
 ### How do I get set up? ###
 
 1. Clone the project from bitbucket.
