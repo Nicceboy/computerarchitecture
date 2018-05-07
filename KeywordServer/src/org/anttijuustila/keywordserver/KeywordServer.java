@@ -18,7 +18,6 @@ public class KeywordServer extends Thread implements SessionManager {
 
 	private static Map<String, KeywordPlugin> plugins = new HashMap<>();
     private static Vector<KeywordSession> sessions = null;
-	private static DirectoryWatcher dirWatcher = null;
 
 	public static void main(String[] args) {
 		System.out.println("\n\n ****** Starting keyword server... ****** \n\n ");
@@ -59,8 +58,6 @@ public class KeywordServer extends Thread implements SessionManager {
 			System.out.println("Creating server socket...");
 			socket = new ServerSocket(10000);
 			sessions = new Vector<KeywordSession>();
-			System.out.println("Starting dirWatcher...");
-			dirWatcher.start();
 			int sessionCount = 0;
 			System.out.println("Entering server accept connections loop...");
 			while (running) {
@@ -77,7 +74,6 @@ public class KeywordServer extends Thread implements SessionManager {
 		}
 		System.out.println("Cleaning server sessions while closing down...");
 		sessions.forEach(session -> session.end());
-		dirWatcher.quit();
 	}
 	
 
