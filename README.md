@@ -4,33 +4,28 @@
 **Client to server Json:**
 ```javascript
 {
-  "Command": 1,
-  "WordsForModule": [
-    {
-      "TrackableAndModulePair": [
-        {
-          "TrackablesToAdd": [
-            "Word1",
-            "Word2"
-          ],
-	   "TrackablesToRemove": [
-            "Word3",
-            "Word4"
-          ],
-          "Modules": [
-            {
-              "ModuleName": "Twitter",
-              "ExtraInfo": "OmenaTwitterZ"
-            },
-            {
-              "ModuleName": "Directory",
-              "ExtraInfo": "C:/User/Directory"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+	"Command": 1,
+	"WordsForModule": [{
+		"TrackableAndModulePair": [{
+			"TrackablesToAdd": [
+				"Word1",
+				"Word2"
+			],
+			"TrackablesToRemove": [
+				"Word3",
+				"Word4"
+			],
+			"Modules": [{
+					"ModuleName": "Twitter",
+					"ExtraInfo": "OmenaTwitterZ"
+				},
+				{
+					"ModuleName": "Directory",
+					"ExtraInfo": "C:/User/Directory"
+				}
+			]
+		}]
+	}]
 }
 ```
 Command can be 1, 2 or 3
@@ -43,57 +38,57 @@ ExtraInfo is info needed for different module (Twitter module will need Url, Dir
 
 ```javascript
 {
-  "ResponseType": 1,
-  "AdditionalInfo": "Error on adding",
-  "ModuleList": [
-    {
-      "ModuleName": "Twitter",
-      "ModuleDesc": "This module will search/watch words found in twitter from specific username",
-      "ModuleUsage": "This module needs twitter username",
-      "WatchList": [
-        {
-          "ModuleTarget": "OmenatwitterZ",
-          "Trackables": [
-            "Omena",
-            "Appelsiini"
-          ]
-        },
-        {
-          "ModuleTarget": "AppelsiinitwitterZ",
-          "Trackables": [
-            "Päärynä",
-            "Kiiwi"
-          ]
-        }
-      ]
-    },
-    {
-      "ModuleName": "Directory",
-      "ModuleDesc": "This module will search/watch directory for words in either name of file or in the content of file from specific directory",
-      "ModukeUsage": "This module needs filepath to directory",
-      "WatchList": [
-        {
-          "ModuleTarget": "C:/User/Directory",
-          "Trackables": [
-            "Päärynä",
-            "Kiiwi"
-          ]
-        },
-        {
-          "ModuleTarget": "C:/Paula/Documents",
-          "Trackables": [
-            "Hevonen",
-            "Koira"
-          ]
-        }
-      ]
-    }
-  ],
-  "NotificationContent": {
-    "ModuleName": "Twitter",
-    "ModuleTarget": "Paukku",
-    "Trackable": "Hevonen"
-  }
+	"ResponseType": 1,
+	"AdditionalInfo": "Error on adding",
+	"ModuleList": [{
+			"ModuleName": "Twitter",
+			"ModuleDesc": "This module will search/watch words found in twitter from specific username",
+			"ModuleUsage": "This module needs twitter username",
+			"WatchList": [{
+					"ModuleTarget": "OmenatwitterZ",
+					"Trackables": [
+						"Omena",
+						"Appelsiini"
+					]
+				},
+				{
+					"ModuleTarget": "AppelsiinitwitterZ",
+					"Trackables": [
+						"Päärynä",
+						"Kiiwi"
+					]
+				}
+			]
+		},
+		{
+			"ModuleName": "Directory",
+			"ModuleDesc": "This module will search/watch directory for words in either name of file or in the content of file from specific directory",
+			"ModukeUsage": "This module needs filepath to directory",
+			"WatchList": [{
+					"ModuleTarget": "C:/User/Directory",
+					"Trackables": [
+						"Päärynä",
+						"Kiiwi"
+					]
+				},
+				{
+					"ModuleTarget": "C:/Paula/Documents",
+					"Trackables": [
+						"Hevonen",
+						"Koira"
+					]
+				}
+			]
+		}
+	],
+	"NotificationContent": {
+		"ModuleName": "Twitter",
+		"ModuleTarget": "Paukku",
+		"Trackables": [
+			"Hevonen",
+			"Koira"
+		]
+	}
 }
 ```
 
