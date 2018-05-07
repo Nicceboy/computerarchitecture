@@ -1,5 +1,6 @@
 package org.keskikettera.keywordplugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
@@ -19,9 +20,14 @@ public interface KeywordPlugin {
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing;
 
     public interface KeywordTrackable {
-        public String getTrackable();
+
+        public List<String> getTrackables();
 
         public String getExtraInfo();
+
+        //Return true on success, false on failure
+        public boolean addTrackable(String newTrack);
+        public boolean removeTrackable(String trackToRemove);
     }
 
     public interface KeywordNotifyObject {
@@ -30,6 +36,8 @@ public interface KeywordPlugin {
         public String getModuleExtraInfo();
 
         public List<String> getTrackablesFound();
+
+
     }
 
     public class FailedToDoPluginThing extends Exception {
