@@ -13,28 +13,33 @@ import java.nio.file.FileSystems;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 
+import com.sun.org.apache.xpath.internal.operations.Mod;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 import org.keskikettera.keywordplugin.KeywordPlugin;
+import org.omg.CORBA.OBJ_ADAPTER;
 
 
 public class KeywordSession extends Thread implements Observer {
 
 	private Socket socket = null;
-	private List<String> keywords = new ArrayList();
-	private DirectoryWatcher watcher = null;
+	private static Map<String, KeywordPlugin> plugins;
+	private List<String> keywords = null;
 	private DataOutputStream out = null;
 	private SessionManager manager = null;
 	private int sessionId = 0;
 
-	KeywordSession(Socket s, DirectoryWatcher w, SessionManager mgr, int session) {
+	KeywordSession(Socket s, SessionManager mgr, int session) {
 		socket = s;
-		watcher = w;
+		keywords = new ArrayList();
 		manager = mgr;
 		sessionId = session;
 	}
 
+	static void setPlugins(Map<String, KeywordPlugin> plugins) {
+	    KeywordSession.plugins = plugins;
+    }
 
 	public void run() {
 		String data = "";
@@ -73,21 +78,26 @@ public class KeywordSession extends Thread implements Observer {
 							int command = (int) mainJsonObj.get("Command");
 
 							JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
-                            List<String> trackablesToAdd = new ArrayList<>();
-                            List<String> trackablesToRemove = new ArrayList<>();
-                            List<Map<String, String>> modules = new ArrayList<>();
 
                             for (Object pairObj : wordsForModule) {
+                                List<String> trackablesToAdd = new ArrayList<>();
+                                List<String> trackablesToRemove = new ArrayList<>();
+                                List<Map<String, String>> modules = new ArrayList<>();
+
                                 JSONObject trackableAndModule = (JSONObject) pairObj;
 
-                                for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
-                                    JSONObject trackable = (JSONObject) trackableAdd;
-                                    trackablesToAdd.add(trackable.toString());
+                                if (trackableAndModule.containsKey("TrackablesToAdd")) {
+                                    for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
+                                        JSONObject trackable = (JSONObject) trackableAdd;
+                                        trackablesToAdd.add(trackable.toString());
+                                    }
                                 }
 
-                                for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
-                                    JSONObject trackable = (JSONObject) trackableRemove;
-                                    trackablesToRemove.add(trackable.toString());
+                                if (trackableAndModule.containsKey("TrackablesToRemove")) {
+                                    for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
+                                        JSONObject trackable = (JSONObject) trackableRemove;
+                                        trackablesToRemove.add(trackable.toString());
+                                    }
                                 }
 
                                 for (Object moduleObj : (JSONArray) trackableAndModule.get("Modules")) {
@@ -98,30 +108,21 @@ public class KeywordSession extends Thread implements Observer {
                                     tempMap.put("ExtraInfo", module.get("ExtraInfo").toString());
                                     modules.add(tempMap);
                                 }
-                            }
 
-//							JSONObject root;
-//
-//							root = (JSONObject) new JSONParser().parse(data);
-//
-//							String command = root.get("command").toString(); // id of the operation, for async operations.
-//							dir = (String) root.get("dir"); // request/response
-//							Boolean recursive = (Boolean)root.get("recursive");
-//							JSONArray words = (JSONArray)root.get("keywords");
-//
-//							if (command != null && command.equalsIgnoreCase("watch")) {
-//								if (null != words) {
-//									@SuppressWarnings("unchecked")
-//									Iterator<String> iterator = words.iterator();
-//									while (iterator.hasNext()) {
-//										keywords.add(iterator.next());
-//									}
-//								}
-//								if (dir != null) {
-//									System.out.println(sessionId + ": Adding dir " + dir + " under watch");
-//									watcher.addWatchedDirectory(FileSystems.getDefault().getPath(dir), recursive, this);
-//								}
-//							}
+                                if (trackablesToAdd.size() > 0) {
+                                    for (Map<String, String> module : modules) {
+                                        KeywordPlugin kp = plugins.get(module.get("ModuleName"));
+                                        kp.addTrackables(trackablesToAdd, module.get("ExtraInfo"), this);
+                                    }
+                                }
+
+                                if (trackablesToRemove.size() > 0) {
+                                    for (Map<String, String> module : modules) {
+                                        KeywordPlugin kp = plugins.get(module.get("ModuleName"));
+                                        kp.removeTrackables(trackablesToRemove, module.get("ExtraInfo"), this);
+                                    }
+                                }
+                            }
 						}
 					}
 				} catch (ParseException e) {
@@ -161,7 +162,6 @@ public class KeywordSession extends Thread implements Observer {
 			} catch (IOException ignored) {
 			}
 		}
-		watcher.removeWatchedDirectories(this);
 	}
 
 
@@ -207,15 +207,93 @@ public class KeywordSession extends Thread implements Observer {
 //			e1.printStackTrace();
 //		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private JSONObject createResponse(String msgType, String msgText, String msgFile) {
-		JSONObject toSend = new JSONObject();
-		toSend.put("response", msgType);
-		toSend.put("text", msgText);
-		toSend.put("file", msgFile);
-		return toSend;
-	}
+    private JSONArray createModuleList() {
+	    JSONArray finalModuleList = new JSONArray();
+
+	    for (KeywordPlugin plugin : plugins.values()) {
+	        JSONObject module = new JSONObject();
+            JSONArray watchList = new JSONArray();
+
+	        List<KeywordPlugin.KeywordTrackable> pluginTrackables = plugin.getAllTrackables();
+	        for (KeywordPlugin.KeywordTrackable pluginTrackable : pluginTrackables) {
+	            boolean createNewEntry = true;
+	            if (watchList.size() > 0) {
+                    for (Object watchObj : watchList) {
+                        JSONObject watch = (JSONObject) watchObj;
+                        if (pluginTrackable.getExtraInfo().equals(watch.get("ModuleTarget"))) {
+                            JSONArray trackables = (JSONArray) watch.get("Trackables");
+                            trackables.add(pluginTrackable.getTrackable());
+                            createNewEntry = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (createNewEntry) {
+                    JSONObject tempWatch = new JSONObject();
+                    JSONArray tempTrackables = new JSONArray();
+
+                    tempTrackables.add(pluginTrackable.getTrackable());
+
+                    tempWatch.put("ModuleTarget", pluginTrackable.getExtraInfo());
+                    tempWatch.put("Trackables", tempTrackables);
+
+                    watchList.add(tempWatch);
+                }
+            }
+
+            module.put("ModuleName", plugin.getPluginName());
+	        module.put("ModuleDesc", plugin.getPluginDesc());
+	        module.put("ModuleUsage", plugin.getPluginUsage());
+	        module.put("WatchList", watchList);
+
+	        finalModuleList.add(module);
+        }
+
+        return finalModuleList;
+    }
+
+    @SuppressWarnings("unchecked")
+    private JSONObject createChangeSucceedResponse() {
+	    JSONObject toSend = new JSONObject();
+	    toSend.put("ResponseType", 1);
+	    toSend.put("AdditionalInfo", "Change succeed");
+
+        toSend.put("ModuleList", this.createModuleList());
+
+	    return toSend;
+    }
+
+    @SuppressWarnings("unchecked")
+    private JSONObject createDetailedWatchListResponse() {
+	    JSONObject toSend = new JSONObject();
+	    toSend.put("ResponseType", 2);
+	    toSend.put("AdditionalInfo", "Detailed list of words in watch list");
+
+	    toSend.put("ModuleList", this.createModuleList());
+
+	    return  toSend;
+    }
+
+    @SuppressWarnings("unchecked")
+    private JSONObject createTrackableFoundResponse(final KeywordPlugin.KeywordNotifyObject notifyObject) {
+	    JSONObject toSend = new JSONObject();
+	    toSend.put("ResponseType", 3);
+	    toSend.put("AdditionalInfo", "Trackable found");
+
+	    toSend.put("ModuleList", this.createModuleList());
+
+	    JSONObject notificationContent = new JSONObject();
+	    notificationContent.put("ModuleName", notifyObject.getModuleName());
+	    notificationContent.put("ModuleTarget", notifyObject.getTrackablesFound());
+	    notificationContent.put("Trackables", notifyObject.getTrackablesFound());
+
+	    toSend.put("NotificationContent", notificationContent);
+
+	    return toSend;
+    }
 	
 	private void sendResponse(String response) throws IOException {
 		String data = response.toString();
@@ -229,6 +307,5 @@ public class KeywordSession extends Thread implements Observer {
 		out.write(buf, 0, len+2);
 		out.flush();	
 	}
-	
 }
 

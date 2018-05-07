@@ -30,9 +30,9 @@ public class PluginClassLoader extends ClassLoader {
                 File f = new File(directory, filename);
 
                 int length = (int) f.length();
-                byte[] classbytes = new byte[length];
+                byte[] classBytes = new byte[length];
                 DataInputStream in = new DataInputStream(new FileInputStream(f));
-                in.readFully(classbytes);
+                in.readFully(classBytes);
                 in.close();
             }
 

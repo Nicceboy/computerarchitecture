@@ -1,19 +1,23 @@
 package org.anttijuustila.keywordserver;
 
+import org.keskikettera.keywordplugin.KeywordPlugin;
+
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Scanner;
-import java.util.Vector;
+import java.util.*;
 
 public class KeywordServer extends Thread implements SessionManager {
 
+    private static boolean running = true;
 	private static ServerSocket socket = null;
-	private static Vector<KeywordSession> sessions = null;
-	private static boolean running = true;
+
+	private static Map<String, KeywordPlugin> plugins = new HashMap<>();
+    private static Vector<KeywordSession> sessions = null;
 	private static DirectoryWatcher dirWatcher = null;
 
 	public static void main(String[] args) {
@@ -49,8 +53,9 @@ public class KeywordServer extends Thread implements SessionManager {
 	public void run() {
 		try {
 			// register directory and process its events
-			System.out.println("Creating dirWatcher...");
-			dirWatcher = new DirectoryWatcher();	        
+			System.out.println("Getting all plugins...");
+			this.getPlugins();
+			KeywordSession.setPlugins(plugins);
 			System.out.println("Creating server socket...");
 			socket = new ServerSocket(10000);
 			sessions = new Vector<KeywordSession>();
@@ -62,7 +67,7 @@ public class KeywordServer extends Thread implements SessionManager {
 				System.out.println("Accepting socket connections...");
 				Socket s = socket.accept();
 				System.out.println(" ** New connection created, added to sessions...");
-				KeywordSession session = new KeywordSession(s, dirWatcher, this, ++sessionCount);
+				KeywordSession session = new KeywordSession(s, this, ++sessionCount);
 				session.start();
 				sessions.add(session);
 				System.out.println("Session count: " + sessions.size());
@@ -84,5 +89,32 @@ public class KeywordServer extends Thread implements SessionManager {
 		toRemove = null;
 		System.out.println("Session count after remove session: " + sessions.size());
 	}
+
+	public void getPlugins() {
+	    File dir = new File(System.getProperty("user.dir") + File.separator + "plugins");
+	    ClassLoader cl = new PluginClassLoader(dir);
+	    if (dir.exists() && dir.isDirectory()) {
+	        String [] files = dir.list();
+            assert files != null;
+            for (String file : files) {
+                try {
+                    if (!file.endsWith(".class")) {
+                        continue;
+                    }
+
+                    Class c = cl.loadClass(file.substring(0, file.indexOf(".")));
+                    Class[] intf = c.getInterfaces();
+                    for (Class anIntf : intf) {
+                        if (anIntf.getName().equalsIgnoreCase("KeywordPlugin")) {
+                            KeywordPlugin kp = (KeywordPlugin) c.newInstance();
+                            plugins.put(kp.getPluginName(), kp);
+                        }
+                    }
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
 }
