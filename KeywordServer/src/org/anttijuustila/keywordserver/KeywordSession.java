@@ -13,71 +13,69 @@ import java.nio.file.FileSystems;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 
-import com.sun.org.apache.xpath.internal.operations.Mod;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 import org.keskikettera.keywordplugin.KeywordPlugin;
-import org.omg.CORBA.OBJ_ADAPTER;
 
 
 public class KeywordSession extends Thread implements Observer {
 
-	private Socket socket = null;
-	private static Map<String, KeywordPlugin> plugins;
-	private List<String> keywords = null;
-	private DataOutputStream out = null;
-	private SessionManager manager = null;
-	private int sessionId = 0;
+    private Socket socket = null;
+    private static Map<String, KeywordPlugin> plugins;
+    private List<String> keywords = null;
+    private DataOutputStream out = null;
+    private SessionManager manager = null;
+    private int sessionId = 0;
 
-	KeywordSession(Socket s, SessionManager mgr, int session) {
-		socket = s;
-		keywords = new ArrayList();
-		manager = mgr;
-		sessionId = session;
-	}
-
-	static void setPlugins(Map<String, KeywordPlugin> plugins) {
-	    KeywordSession.plugins = plugins;
+    KeywordSession(Socket s, SessionManager mgr, int session) {
+        socket = s;
+        keywords = new ArrayList();
+        manager = mgr;
+        sessionId = session;
     }
 
-	public void run() {
-		String data = "";
-		String dir = "";
-		
-		try {
-			DataInputStream inStream = new DataInputStream(socket.getInputStream());
-			out = new DataOutputStream(socket.getOutputStream());
+    static void setPlugins(Map<String, KeywordPlugin> plugins) {
+        KeywordSession.plugins = plugins;
+    }
 
-			byte [] messageByte = new byte[4096];
+    public void run() {
+        String data = "";
+        String dir = "";
 
-			while (!interrupted() && socket != null && socket.isConnected()) {
-				// Read data from socket
-				System.out.println(sessionId + ": Start to receive data...");
-				try {
-					dir = "";
-					messageByte[0] = inStream.readByte();
-					messageByte[1] = inStream.readByte();
-					ByteBuffer byteBuffer = ByteBuffer.wrap(messageByte, 0, 2);
-					int bytesToRead = byteBuffer.getShort();
-					System.out.println(sessionId + ": Read " + bytesToRead + " bytes");
+        try {
+            DataInputStream inStream = new DataInputStream(socket.getInputStream());
+            out = new DataOutputStream(socket.getOutputStream());
 
-					if (bytesToRead > 0) {
-						int bytesRead = 0;
-						byteBuffer.clear();
-						while (bytesToRead > bytesRead) {
-							byteBuffer.put(inStream.readByte());
-							bytesRead++;
-						}
-						if (bytesRead == bytesToRead) {
-							data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
-							System.out.println(sessionId + ": Data received: " + data);
+            byte[] messageByte = new byte[4096];
 
-							JSONObject mainJsonObj = (JSONObject) new JSONParser().parse(data);
+            while (!interrupted() && socket != null && socket.isConnected()) {
+                // Read data from socket
+                System.out.println(sessionId + ": Start to receive data...");
+                try {
+                    dir = "";
+                    messageByte[0] = inStream.readByte();
+                    messageByte[1] = inStream.readByte();
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(messageByte, 0, 2);
+                    int bytesToRead = byteBuffer.getShort();
+                    System.out.println(sessionId + ": Read " + bytesToRead + " bytes");
 
-							int command = (int) mainJsonObj.get("Command");
+                    if (bytesToRead > 0) {
+                        int bytesRead = 0;
+                        byteBuffer.clear();
+                        while (bytesToRead > bytesRead) {
+                            byteBuffer.put(inStream.readByte());
+                            bytesRead++;
+                        }
+                        if (bytesRead == bytesToRead) {
+                            data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
+                            System.out.println(sessionId + ": Data received: " + data);
 
-							JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
+                            JSONObject mainJsonObj = (JSONObject) new JSONParser().parse(data);
+
+                            int command = (int) mainJsonObj.get("Command");
+
+                            JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
 
                             for (Object pairObj : wordsForModule) {
                                 List<String> trackablesToAdd = new ArrayList<>();
@@ -123,103 +121,70 @@ public class KeywordSession extends Thread implements Observer {
                                     }
                                 }
                             }
-						}
-					}
-				} catch (ParseException e) {
-					e.printStackTrace();
-				} catch (NoSuchFileException nsf) {
-					JSONObject toSend = createResponse("response", "Path does not exist", dir);
-					sendResponse(toSend.toString());
-				} 
-
-			} // while
-		} catch (EOFException e1) {
-			// Remove from Server, since connection was broken.
-			System.out.println(sessionId + ": Session connection with client closed");
-			manager.removeSession(this);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			System.out.println(sessionId + ": Session: IOException in socket connection with client");
-			// Remove from Server, since connection was broken.
-			manager.removeSession(this);
-		}
-
-		try {
-			socket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		socket = null;
-		keywords.clear();
-		keywords = null;
-	}
-
-	public void end() {
-		System.out.println(sessionId + ": Session end called");
-		if (null != socket) {
-			try {
-				socket.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
-
-	@Override
-	public void update(Observable o, Object arg) {
-		KeywordPlugin.KeywordNotifyObject event = (KeywordPlugin.KeywordNotifyObject)arg;
-
-		System.out.println(sessionId + ": Change event happened in " + event.getModuleName());
-		System.out.println(sessionId + ": " + event.getTrackablesFound() + " has been found in " + event.getModuleExtraInfo());
-
-//		Scanner s;
-//		try {
-//			s = new Scanner(new File(event.fileName));
-//			String words = "";
-//			boolean isFirst = true;
-//			while (s.hasNextLine()){
-//				String nextLine = s.nextLine();
-//				for (String word : keywords) {
-//					if (nextLine.toLowerCase().contains(word.toLowerCase())) {
-//						System.out.println(sessionId + ": Keyword " + word + " in file, adding to client notification msg.");
-//						if (!isFirst) {
-//							words += ",";
-//						}
-//						words += word;
-//						if (isFirst) isFirst = false;
-//					}
-//				}
-//			}
-//			s.close();
-//			// Send the line to the client.
-//			if (words.length() > 0) {
-//				System.out.println(sessionId + ": Creating response msg to client");
-//				JSONObject toSend = createResponse("response", words, event.fileName);
-//				try {
-//					System.out.println(sessionId + ": Sending response msg to client");
+                        }
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                } catch (KeywordPlugin.FailedToDoPluginThing e) {
+//					JSONObject toSend = createResponse("response", "Path does not exist", dir);
 //					sendResponse(toSend.toString());
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//					System.out.println(sessionId + ": Could not send change event msg to client!");
-//				}
-//			}
-//		} catch (FileNotFoundException e1) {
-//			e1.printStackTrace();
-//		}
-	}
+                }
 
-	@SuppressWarnings("unchecked")
+            } // while
+        } catch (EOFException e1) {
+            // Remove from Server, since connection was broken.
+            System.out.println(sessionId + ": Session connection with client closed");
+            manager.removeSession(this);
+        } catch (IOException e1) {
+            e1.printStackTrace();
+            System.out.println(sessionId + ": Session: IOException in socket connection with client");
+            // Remove from Server, since connection was broken.
+            manager.removeSession(this);
+        }
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        socket = null;
+        keywords.clear();
+        keywords = null;
+    }
+
+    public void end() {
+        System.out.println(sessionId + ": Session end called");
+        if (null != socket) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+
+    @Override
+    public void update(Observable o, Object arg) {
+        KeywordPlugin.KeywordNotifyObject event = (KeywordPlugin.KeywordNotifyObject) arg;
+
+        System.out.println(sessionId + ": Change event happened in " + event.getModuleName());
+        System.out.println(sessionId + ": " + event.getTrackablesFound() + " has been found in " + event.getModuleExtraInfo());
+
+        this.createTrackableFoundResponse(event);
+    }
+
+    @SuppressWarnings("unchecked")
     private JSONArray createModuleList() {
-	    JSONArray finalModuleList = new JSONArray();
+        JSONArray finalModuleList = new JSONArray();
 
-	    for (KeywordPlugin plugin : plugins.values()) {
-	        JSONObject module = new JSONObject();
+        for (KeywordPlugin plugin : plugins.values()) {
+            JSONObject module = new JSONObject();
             JSONArray watchList = new JSONArray();
 
-	        List<KeywordPlugin.KeywordTrackable> pluginTrackables = plugin.getAllTrackables();
-	        for (KeywordPlugin.KeywordTrackable pluginTrackable : pluginTrackables) {
-	            boolean createNewEntry = true;
-	            if (watchList.size() > 0) {
+            List<KeywordPlugin.KeywordTrackable> pluginTrackables = plugin.getAllTrackables();
+            for (KeywordPlugin.KeywordTrackable pluginTrackable : pluginTrackables) {
+                boolean createNewEntry = true;
+                if (watchList.size() > 0) {
                     for (Object watchObj : watchList) {
                         JSONObject watch = (JSONObject) watchObj;
                         if (pluginTrackable.getExtraInfo().equals(watch.get("ModuleTarget"))) {
@@ -245,11 +210,11 @@ public class KeywordSession extends Thread implements Observer {
             }
 
             module.put("ModuleName", plugin.getPluginName());
-	        module.put("ModuleDesc", plugin.getPluginDesc());
-	        module.put("ModuleUsage", plugin.getPluginUsage());
-	        module.put("WatchList", watchList);
+            module.put("ModuleDesc", plugin.getPluginDesc());
+            module.put("ModuleUsage", plugin.getPluginUsage());
+            module.put("WatchList", watchList);
 
-	        finalModuleList.add(module);
+            finalModuleList.add(module);
         }
 
         return finalModuleList;
@@ -257,55 +222,55 @@ public class KeywordSession extends Thread implements Observer {
 
     @SuppressWarnings("unchecked")
     private JSONObject createChangeSucceedResponse() {
-	    JSONObject toSend = new JSONObject();
-	    toSend.put("ResponseType", 1);
-	    toSend.put("AdditionalInfo", "Change succeed");
+        JSONObject toSend = new JSONObject();
+        toSend.put("ResponseType", 1);
+        toSend.put("AdditionalInfo", "Change succeed");
 
         toSend.put("ModuleList", this.createModuleList());
 
-	    return toSend;
+        return toSend;
     }
 
     @SuppressWarnings("unchecked")
     private JSONObject createDetailedWatchListResponse() {
-	    JSONObject toSend = new JSONObject();
-	    toSend.put("ResponseType", 2);
-	    toSend.put("AdditionalInfo", "Detailed list of words in watch list");
+        JSONObject toSend = new JSONObject();
+        toSend.put("ResponseType", 2);
+        toSend.put("AdditionalInfo", "Detailed list of words in watch list");
 
-	    toSend.put("ModuleList", this.createModuleList());
+        toSend.put("ModuleList", this.createModuleList());
 
-	    return  toSend;
+        return toSend;
     }
 
     @SuppressWarnings("unchecked")
     private JSONObject createTrackableFoundResponse(final KeywordPlugin.KeywordNotifyObject notifyObject) {
-	    JSONObject toSend = new JSONObject();
-	    toSend.put("ResponseType", 3);
-	    toSend.put("AdditionalInfo", "Trackable found");
+        JSONObject toSend = new JSONObject();
+        toSend.put("ResponseType", 3);
+        toSend.put("AdditionalInfo", "Trackable found");
 
-	    toSend.put("ModuleList", this.createModuleList());
+        toSend.put("ModuleList", this.createModuleList());
 
-	    JSONObject notificationContent = new JSONObject();
-	    notificationContent.put("ModuleName", notifyObject.getModuleName());
-	    notificationContent.put("ModuleTarget", notifyObject.getTrackablesFound());
-	    notificationContent.put("Trackables", notifyObject.getTrackablesFound());
+        JSONObject notificationContent = new JSONObject();
+        notificationContent.put("ModuleName", notifyObject.getModuleName());
+        notificationContent.put("ModuleTarget", notifyObject.getTrackablesFound());
+        notificationContent.put("Trackables", notifyObject.getTrackablesFound());
 
-	    toSend.put("NotificationContent", notificationContent);
+        toSend.put("NotificationContent", notificationContent);
 
-	    return toSend;
+        return toSend;
     }
-	
-	private void sendResponse(String response) throws IOException {
-		String data = response.toString();
-		byte [] buf = new byte[(data.length()*3)+2];
-		ByteBuffer buffer = ByteBuffer.wrap(buf);
-		byte [] msg = data.getBytes(StandardCharsets.UTF_16);
-		short len = (short)msg.length;
-		System.out.println(sessionId + ": Message length in bytes" + len);
-		buffer.putShort(len);
-		buffer.put(msg);
-		out.write(buf, 0, len+2);
-		out.flush();	
-	}
+
+    private void sendResponse(String response) throws IOException {
+        String data = response;
+        byte[] buf = new byte[(data.length() * 3) + 2];
+        ByteBuffer buffer = ByteBuffer.wrap(buf);
+        byte[] msg = data.getBytes(StandardCharsets.UTF_16);
+        short len = (short) msg.length;
+        System.out.println(sessionId + ": Message length in bytes" + len);
+        buffer.putShort(len);
+        buffer.put(msg);
+        out.write(buf, 0, len + 2);
+        out.flush();
+    }
 }
 

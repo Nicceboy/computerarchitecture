@@ -5,15 +5,15 @@ import java.io.*;
 public class PluginClassLoader extends ClassLoader {
     File directory;
 
-    public PluginClassLoader (File dir) {
+    public PluginClassLoader(File dir) {
         directory = dir;
     }
 
-    public Class loadClass (String name) throws ClassNotFoundException {
+    public Class loadClass(String name) throws ClassNotFoundException {
         return loadClass(name, true);
     }
 
-    public Class loadClass (String classname, boolean resolve) throws ClassNotFoundException {
+    public Class loadClass(String classname, boolean resolve) throws ClassNotFoundException {
         try {
             Class c = findLoadedClass(classname);
 
