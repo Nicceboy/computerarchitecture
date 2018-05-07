@@ -16,20 +16,20 @@ import java.util.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
+import org.keskikettera.keywordplugin.KeywordPlugin;
 
 
 public class KeywordSession extends Thread implements Observer {
 
 	private Socket socket = null;
-	private Set<String> keywords = null;
+	private List<String> keywords = new ArrayList();
 	private DirectoryWatcher watcher = null;
-	private 	DataOutputStream out = null;
+	private DataOutputStream out = null;
 	private SessionManager manager = null;
 	private int sessionId = 0;
 
 	KeywordSession(Socket s, DirectoryWatcher w, SessionManager mgr, int session) {
 		socket = s;
-		keywords = new HashSet<String>();
 		watcher = w;
 		manager = mgr;
 		sessionId = session;
@@ -124,7 +124,6 @@ public class KeywordSession extends Thread implements Observer {
 //							}
 						}
 					}
-
 				} catch (ParseException e) {
 					e.printStackTrace();
 				} catch (NoSuchFileException nsf) {
@@ -159,7 +158,7 @@ public class KeywordSession extends Thread implements Observer {
 		if (null != socket) {
 			try {
 				socket.close();
-			} catch (IOException e) {
+			} catch (IOException ignored) {
 			}
 		}
 		watcher.removeWatchedDirectories(this);
@@ -168,43 +167,45 @@ public class KeywordSession extends Thread implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		DirectoryEvent event = (DirectoryEvent)arg;
+		KeywordPlugin.KeywordNotifyObject event = (KeywordPlugin.KeywordNotifyObject)arg;
 
-		System.out.println(sessionId + ": Change event happened in file system");
-		Scanner s;
-		try {
-			s = new Scanner(new File(event.fileName));
-			String words = "";
-			boolean isFirst = true;
-			while (s.hasNextLine()){
-				String nextLine = s.nextLine();
-				for (String word : keywords) {
-					if (nextLine.toLowerCase().contains(word.toLowerCase())) {
-						System.out.println(sessionId + ": Keyword " + word + " in file, adding to client notification msg.");
-						if (!isFirst) {
-							words += ",";
-						}
-						words += word;
-						if (isFirst) isFirst = false;
-					}
-				}
-			}
-			s.close();
-			// Send the line to the client.
-			if (words.length() > 0) {
-				System.out.println(sessionId + ": Creating response msg to client");
-				JSONObject toSend = createResponse("response", words, event.fileName);						
-				try {
-					System.out.println(sessionId + ": Sending response msg to client");
-					sendResponse(toSend.toString());
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.out.println(sessionId + ": Could not send change event msg to client!");
-				}
-			}
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
+		System.out.println(sessionId + ": Change event happened in " + event.getModuleName());
+		System.out.println(sessionId + ": " + event.getTrackablesFound() + " has been found in " + event.getModuleExtraInfo());
+
+//		Scanner s;
+//		try {
+//			s = new Scanner(new File(event.fileName));
+//			String words = "";
+//			boolean isFirst = true;
+//			while (s.hasNextLine()){
+//				String nextLine = s.nextLine();
+//				for (String word : keywords) {
+//					if (nextLine.toLowerCase().contains(word.toLowerCase())) {
+//						System.out.println(sessionId + ": Keyword " + word + " in file, adding to client notification msg.");
+//						if (!isFirst) {
+//							words += ",";
+//						}
+//						words += word;
+//						if (isFirst) isFirst = false;
+//					}
+//				}
+//			}
+//			s.close();
+//			// Send the line to the client.
+//			if (words.length() > 0) {
+//				System.out.println(sessionId + ": Creating response msg to client");
+//				JSONObject toSend = createResponse("response", words, event.fileName);
+//				try {
+//					System.out.println(sessionId + ": Sending response msg to client");
+//					sendResponse(toSend.toString());
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//					System.out.println(sessionId + ": Could not send change event msg to client!");
+//				}
+//			}
+//		} catch (FileNotFoundException e1) {
+//			e1.printStackTrace();
+//		}
 	}
 	
 	@SuppressWarnings("unchecked")
