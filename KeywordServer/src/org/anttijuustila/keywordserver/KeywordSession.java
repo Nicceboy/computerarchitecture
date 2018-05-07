@@ -11,12 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.NoSuchFileException;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -72,28 +67,61 @@ public class KeywordSession extends Thread implements Observer {
 						if (bytesRead == bytesToRead) {
 							data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
 							System.out.println(sessionId + ": Data received: " + data);
-							JSONObject root;
 
-							root = (JSONObject) new JSONParser().parse(data);
+							JSONObject mainJsonObj = (JSONObject) new JSONParser().parse(data);
 
-							String command = root.get("command").toString(); // id of the operation, for async operations.
-							dir = (String) root.get("dir"); // request/response
-							Boolean recursive = (Boolean)root.get("recursive");
-							JSONArray words = (JSONArray)root.get("keywords");
+							int command = (int) mainJsonObj.get("Command");
 
-							if (command != null && command.equalsIgnoreCase("watch")) {
-								if (null != words) {
-									@SuppressWarnings("unchecked")
-									Iterator<String> iterator = words.iterator();
-									while (iterator.hasNext()) {
-										keywords.add(iterator.next());
-									}
-								}
-								if (dir != null) {
-									System.out.println(sessionId + ": Adding dir " + dir + " under watch");
-									watcher.addWatchedDirectory(FileSystems.getDefault().getPath(dir), recursive, this);
-								}
-							}
+							JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
+                            List<String> trackablesToAdd = new ArrayList<>();
+                            List<String> trackablesToRemove = new ArrayList<>();
+                            List<Map<String, String>> modules = new ArrayList<>();
+
+                            for (Object pairObj : wordsForModule) {
+                                JSONObject trackableAndModule = (JSONObject) pairObj;
+
+                                for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
+                                    JSONObject trackable = (JSONObject) trackableAdd;
+                                    trackablesToAdd.add(trackable.toString());
+                                }
+
+                                for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
+                                    JSONObject trackable = (JSONObject) trackableRemove;
+                                    trackablesToRemove.add(trackable.toString());
+                                }
+
+                                for (Object moduleObj : (JSONArray) trackableAndModule.get("Modules")) {
+                                    JSONObject module = (JSONObject) moduleObj;
+                                    Map<String, String> tempMap = new HashMap<>();
+
+                                    tempMap.put("ModuleName", module.get("ModuleName").toString());
+                                    tempMap.put("ExtraInfo", module.get("ExtraInfo").toString());
+                                    modules.add(tempMap);
+                                }
+                            }
+
+//							JSONObject root;
+//
+//							root = (JSONObject) new JSONParser().parse(data);
+//
+//							String command = root.get("command").toString(); // id of the operation, for async operations.
+//							dir = (String) root.get("dir"); // request/response
+//							Boolean recursive = (Boolean)root.get("recursive");
+//							JSONArray words = (JSONArray)root.get("keywords");
+//
+//							if (command != null && command.equalsIgnoreCase("watch")) {
+//								if (null != words) {
+//									@SuppressWarnings("unchecked")
+//									Iterator<String> iterator = words.iterator();
+//									while (iterator.hasNext()) {
+//										keywords.add(iterator.next());
+//									}
+//								}
+//								if (dir != null) {
+//									System.out.println(sessionId + ": Adding dir " + dir + " under watch");
+//									watcher.addWatchedDirectory(FileSystems.getDefault().getPath(dir), recursive, this);
+//								}
+//							}
 						}
 					}
 
