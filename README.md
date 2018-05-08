@@ -3,7 +3,7 @@
 
 **Client to server Json:**
 
-##Current:
+## Current:
 ```javascript
 {
 	"Command": 1,
