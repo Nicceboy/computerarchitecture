@@ -4,32 +4,30 @@
 **Client to server Json:**
 ```javascript
 {
-	"Command": 1,
-	"WordsForModule": 
-		{
-			"TrackableAndModulePair": [
-				{
-					"TrackablesToAdd": [
-						"Word1",
-						"Word2"
-					],
-					"TrackablesToRemove": [
-						"Word3",
-						"Word4"
-					],
-					"Module": 
-						{
-							"ModuleName": "Twitter",
-							"ExtraInfo": "OmenaTwitterZ"
-						}					
-				}
-			]
-		}
-	}
+  "Command": 1,
+  "WordsForModule": [
+    {
+      "ModuleName": "Twitter",
+      "TrackableAndTargetPair": [
+        {
+          "TrackablesToAdd": [
+            "Word1",
+            "Word2"
+          ],
+          "TrackablesToRemove": [
+            "Word3",
+            "Word4"
+          ],
+          "ExtraInfo": "OmenaTwitterZ"
+        }
+      ]
+    }
+  ]
+}
 ```
 Command can be 1, 2 or 3
  1. Change trackables to be followed
- 2. Give trackables in watch list
+ 2. Get trackables on watch list
 
 ExtraInfo is info needed for different module (Twitter module will need Url, Directory needs filepath)
 
