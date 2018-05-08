@@ -2,6 +2,41 @@
 ### Json Protocols ###
 
 **Client to server Json:**
+
+##Current:
+```javascript
+{
+	"Command": 1,
+	"WordsForModule": [
+		{
+			"TrackableAndModulePair": [
+				{
+					"TrackablesToAdd": [
+						"Word1",
+						"Word2"
+					],
+					"TrackablesToRemove": [
+						"Word3",
+						"Word4"
+					],
+					"Modules": [
+						{
+							"ModuleName": "Twitter",
+							"ExtraInfo": "OmenaTwitterZ"
+						},
+						{
+							"ModuleName": "Directory",
+							"ExtraInfo": "C:/User/Directory"
+						}
+					]
+				}
+			]
+		}
+	]
+}
+```
+## Probably better alternative would be
+
 ```javascript
 {
   "Command": 1,
