@@ -73,51 +73,53 @@ public class KeywordSession extends Thread implements Observer {
 
                             JSONObject mainJsonObj = (JSONObject) new JSONParser().parse(data);
 
-                            int command = (int) mainJsonObj.get("Command");
+                            int command =  Integer.parseInt(mainJsonObj.get("Command").toString());
 
                             JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
+                            if (command == 1) {
+                                for (Object pairObj : wordsForModule) {
 
-                            for (Object pairObj : wordsForModule) {
-                                List<String> trackablesToAdd = new ArrayList<>();
-                                List<String> trackablesToRemove = new ArrayList<>();
-                                List<Map<String, String>> modules = new ArrayList<>();
+                                    List<String> trackablesToAdd = new ArrayList<>();
+                                    List<String> trackablesToRemove = new ArrayList<>();
+                                    List<Map<String, String>> modules = new ArrayList<>();
 
-                                JSONObject trackableAndModule = (JSONObject) pairObj;
+                                    JSONObject trackableAndModule = (JSONObject) pairObj;
 
-                                if (trackableAndModule.containsKey("TrackablesToAdd")) {
-                                    for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
-                                        JSONObject trackable = (JSONObject) trackableAdd;
-                                        trackablesToAdd.add(trackable.toString());
+                                    if (trackableAndModule.containsKey("TrackablesToAdd")) {
+                                        for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
+                                            JSONObject trackable = (JSONObject) trackableAdd;
+                                            trackablesToAdd.add(trackable.toString());
+                                        }
                                     }
-                                }
 
-                                if (trackableAndModule.containsKey("TrackablesToRemove")) {
-                                    for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
-                                        JSONObject trackable = (JSONObject) trackableRemove;
-                                        trackablesToRemove.add(trackable.toString());
+                                    if (trackableAndModule.containsKey("TrackablesToRemove")) {
+                                        for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
+                                            JSONObject trackable = (JSONObject) trackableRemove;
+                                            trackablesToRemove.add(trackable.toString());
+                                        }
                                     }
-                                }
 
-                                for (Object moduleObj : (JSONArray) trackableAndModule.get("Modules")) {
-                                    JSONObject module = (JSONObject) moduleObj;
-                                    Map<String, String> tempMap = new HashMap<>();
+                                    for (Object moduleObj : (JSONArray) trackableAndModule.get("Modules")) {
+                                        JSONObject module = (JSONObject) moduleObj;
+                                        Map<String, String> tempMap = new HashMap<>();
 
-                                    tempMap.put("ModuleName", module.get("ModuleName").toString());
-                                    tempMap.put("ExtraInfo", module.get("ExtraInfo").toString());
-                                    modules.add(tempMap);
-                                }
-
-                                if (trackablesToAdd.size() > 0) {
-                                    for (Map<String, String> module : modules) {
-                                        KeywordPlugin kp = plugins.get(module.get("ModuleName"));
-                                        kp.addTrackables(trackablesToAdd, module.get("ExtraInfo"), this);
+                                        tempMap.put("ModuleName", module.get("ModuleName").toString());
+                                        tempMap.put("ExtraInfo", module.get("ExtraInfo").toString());
+                                        modules.add(tempMap);
                                     }
-                                }
 
-                                if (trackablesToRemove.size() > 0) {
-                                    for (Map<String, String> module : modules) {
-                                        KeywordPlugin kp = plugins.get(module.get("ModuleName"));
-                                        kp.removeTrackables(trackablesToRemove, module.get("ExtraInfo"), this);
+                                    if (trackablesToAdd.size() > 0) {
+                                        for (Map<String, String> module : modules) {
+                                            KeywordPlugin kp = plugins.get(module.get("ModuleName"));
+                                            kp.addTrackables(trackablesToAdd, module.get("ExtraInfo"), this);
+                                        }
+                                    }
+
+                                    if (trackablesToRemove.size() > 0) {
+                                        for (Map<String, String> module : modules) {
+                                            KeywordPlugin kp = plugins.get(module.get("ModuleName"));
+                                            kp.removeTrackables(trackablesToRemove, module.get("ExtraInfo"), this);
+                                        }
                                     }
                                 }
                             }

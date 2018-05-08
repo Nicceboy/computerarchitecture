@@ -65,6 +65,21 @@ public class SamplePlugin implements KeywordPlugin {
     }
 
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws KeywordPlugin.FailedToDoPluginThing{
+        if (!this.trackables.isEmpty()) {
+            //Iterate through list to find existing object with same extra info
+            for (KeywordTrackable sample : this.trackables){
+                if(sample.getExtraInfo().equals(extraInfo)){
+                    //Add missing trackables to object
+                    for (String s : trackables){
+                        sample.removeTrackable(s);
+                    }
+                }
+            }
+
+        }else {
+            this.trackables.add(new KeywordTrackSample(trackables, extraInfo, observer));
+        }
+
     }
 }
     //Have to create own class for each different type of extraInfo
