@@ -4,6 +4,11 @@
 **Client to server Json:**
 
 ## Current:
+###Problems: 
+* Trackables might not be similar, like words for example. Because of this, can't really combine modules
+* Additionally it goes messy, if we have to put same words with other module with same words, and the rest of the words (those which are not same with some module) should be put on another object
+* 
+
 ```javascript
 {
 	"Command": 1,
@@ -36,6 +41,8 @@
 }
 ```
 ## Probably better alternative would be
+* Number of WordsForModule object lists is amount of modules
+* Each module has own list of targets, clear individual trackables
 
 ```javascript
 {
