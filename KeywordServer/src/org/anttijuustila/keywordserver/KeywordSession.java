@@ -189,7 +189,8 @@ public class KeywordSession extends Thread implements Observer {
                         JSONObject watch = (JSONObject) watchObj;
                         if (pluginTrackable.getExtraInfo().equals(watch.get("ModuleTarget"))) {
                             JSONArray trackables = (JSONArray) watch.get("Trackables");
-                            trackables.add(pluginTrackable.getTrackable());
+                            //trackables.add(pluginTrackable.getTrackable());
+                            trackables.addAll(pluginTrackable.getTrackables());
                             createNewEntry = false;
                             break;
                         }
@@ -200,7 +201,8 @@ public class KeywordSession extends Thread implements Observer {
                     JSONObject tempWatch = new JSONObject();
                     JSONArray tempTrackables = new JSONArray();
 
-                    tempTrackables.add(pluginTrackable.getTrackable());
+                   // tempTrackables.add(pluginTrackable.getTrackable());
+                    tempTrackables.addAll(pluginTrackable.getTrackables());
 
                     tempWatch.put("ModuleTarget", pluginTrackable.getExtraInfo());
                     tempWatch.put("Trackables", tempTrackables);
