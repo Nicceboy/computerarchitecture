@@ -5,7 +5,7 @@
 ```javascript
 {
 	"Command": 1,
-	"WordsForModule": [
+	"WordsForModule": 
 		{
 			"TrackableAndModulePair": [
 				{
@@ -17,21 +17,15 @@
 						"Word3",
 						"Word4"
 					],
-					"Modules": [
+					"Module": 
 						{
 							"ModuleName": "Twitter",
 							"ExtraInfo": "OmenaTwitterZ"
-						},
-						{
-							"ModuleName": "Directory",
-							"ExtraInfo": "C:/User/Directory"
-						}
-					]
+						}					
 				}
 			]
 		}
-	]
-}
+	}
 ```
 Command can be 1, 2 or 3
  1. Change trackables to be followed
