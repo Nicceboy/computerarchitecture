@@ -66,7 +66,7 @@ public class KeywordAPI extends Thread {
 		running = true;
 		state = ClientState.EDetached;
 		listener = o;
-		if (null == listener) throw new KeywordAPIException("Keyword client must have a listener");
+		if (null == listener) throw new KeywordAPIException("Keyword api must have a listener");
 		keywords = new Vector<String>();
 		start();		
 	}

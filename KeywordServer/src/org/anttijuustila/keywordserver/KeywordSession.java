@@ -17,7 +17,7 @@ import java.util.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
-import org.keskikettera.keywordplugin.KeywordPlugin;
+import org.keyword.plugin.KeywordPlugin;
 
 
 public class KeywordSession extends Thread implements Observer {
@@ -141,11 +141,11 @@ public class KeywordSession extends Thread implements Observer {
             } // while
         } catch (EOFException e1) {
             // Remove from Server, since connection was broken.
-            System.out.println(sessionId + ": Session connection with client closed");
+            System.out.println(sessionId + ": Session connection with api closed");
             manager.removeSession(this);
         } catch (IOException e1) {
             e1.printStackTrace();
-            System.out.println(sessionId + ": Session: IOException in socket connection with client");
+            System.out.println(sessionId + ": Session: IOException in socket connection with api");
             // Remove from Server, since connection was broken.
             manager.removeSession(this);
         }

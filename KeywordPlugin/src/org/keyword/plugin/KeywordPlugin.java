@@ -1,4 +1,4 @@
-package org.keskikettera.keywordplugin;
+package org.keyword.plugin;
 
 import java.util.ArrayList;
 import java.util.List;

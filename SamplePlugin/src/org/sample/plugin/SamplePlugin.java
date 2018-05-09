@@ -1,7 +1,9 @@
 package org.sample.plugin;
 
-import org.keskikettera.keywordplugin.KeywordPlugin;
 
+
+
+import org.keyword.plugin.KeywordPlugin;
 
 import java.util.*;
 import java.util.stream.Collectors;

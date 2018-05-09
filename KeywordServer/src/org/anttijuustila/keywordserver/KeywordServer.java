@@ -1,6 +1,6 @@
 package org.anttijuustila.keywordserver;
 
-import org.keskikettera.keywordplugin.KeywordPlugin;
+import org.keyword.plugin.KeywordPlugin;
 
 import java.io.File;
 import java.io.IOException;
