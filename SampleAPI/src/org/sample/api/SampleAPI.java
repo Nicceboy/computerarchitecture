@@ -23,15 +23,9 @@ import org.json.simple.parser.ParseException;
 import static org.sample.api.SampleAPI.sendPurpose.*;
 
 
-
 //Example implementation of api, which can follow contents from server regardless of types, what server supports
 
 //Server is supporting plugins, and so is the protocol to Client
-
-
-
-
-
 
 
 public class SampleAPI extends Thread {
@@ -84,7 +78,10 @@ public class SampleAPI extends Thread {
             this.moduleTargets.removeIf(a -> a.getName().equals(target.getName()));
         }
 
+
         public class ModuleTarget {
+
+
             private String targetName;
             private List<String> trackables = new ArrayList<>();
 
@@ -96,33 +93,47 @@ public class SampleAPI extends Thread {
             public ModuleTarget(String Name) {
                 this.targetName = Name;
             }
-            public void storeTempAddables(ArrayList<String> addables){
+
+            public void storeTempAddables(ArrayList<String> addables) {
                 this.temp_trackablesToAdd = addables;
             }
-            public List<String> getTempAddables(){
+            public void storeTempRemovables(ArrayList<String> removables) {
+                this.temp_trackablesToRemove = removables;
+            }
+            List<String> getTempAddables() {
                 return this.temp_trackablesToAdd;
             }
-            public List<String> getTempRemovables(){
+
+            List<String> getTempRemovables() {
                 return this.temp_trackablesToRemove;
             }
-            public void storeTempRemovables(ArrayList<String> removables){
-                this.temp_trackablesToAdd = removables;
-            }
+
+
 
 
             public String getName() {
                 return this.targetName;
             }
-            public boolean isThereChanges(){
+
+            boolean isThereChanges() {
                 return this.isThereChanges;
             }
-            public void resetStatus(){
+
+            public void newChanges() {
+                this.isThereChanges = true;
+            }
+
+            void resetStatus() {
+
+                this.addTrackables(temp_trackablesToAdd);
+                this.removeTrackables(temp_trackablesToRemove);
+
                 this.isThereChanges = false;
                 this.temp_trackablesToAdd = new ArrayList<>();
                 this.temp_trackablesToRemove = new ArrayList<>();
             }
 
-            public void replaceTrackables(List<String> newTargets) {
+            void replaceTrackables(List<String> newTargets) {
                 this.trackables = newTargets;
             }
 
@@ -131,27 +142,31 @@ public class SampleAPI extends Thread {
             }
 
             private boolean addTrackable(String trackableToAdd) {
-                //TODO
-                this.trackables.add(trackableToAdd);
-                return true;
+                //return true if added, false if already exists
+                return !this.trackables.contains(trackableToAdd) && this.trackables.add(trackableToAdd);
+                //  return true;
             }
 
-            public void addTrackables(List<String> trackables) {
+            private void addTrackables(List<String> trackables) {
 
                 for (String toAdd : trackables) {
                     if (addTrackable(toAdd)) {
-                        System.out.printf("Word %s added. \n", toAdd);
+                        SampleAPI.this.instance.notify(String.format("Word %s added in target %s.", toAdd, this.targetName));
                     }
                 }
 
 
             }
 
-            public void removeTrackables(List<String> trackables) {
+            private boolean removeTrackable(String trackableToRemove) {
+                return this.trackables.removeIf(trackableToRemove::equals);
+            }
+
+            void removeTrackables(List<String> trackables) {
                 if (!this.trackables.isEmpty()) {
                     for (String toRemove : trackables) {
                         if (removeTrackable(toRemove)) {
-                            System.out.printf("Word %s removed. \n", toRemove);
+                            SampleAPI.this.instance.notify(String.format("Word %s removed in target %s.", toRemove, this.targetName));
                         }
                     }
 
@@ -161,14 +176,9 @@ public class SampleAPI extends Thread {
 
             }
 
-            private boolean removeTrackable(String trackableToRemove) {
-                return this.trackables.removeIf(trackableToRemove::equals);
-            }
+
         }
     }
-
-
-
 
 
     public interface SampleAPIListener {
@@ -209,6 +219,7 @@ public class SampleAPI extends Thread {
     public List<Module> getModules() {
         return this.availableModules;
     }
+
     public void prepareClient() {
         running = true;
         state = ClientState.EDetached;
@@ -326,7 +337,11 @@ public class SampleAPI extends Thread {
                                         //Loop through modules, what server gave us. Enable new ones, if there are any
                                         //Get list of all trackables to this api in all modules and all targets in those modules
                                         if (response == 2) {
-                                            System.out.println("\n---List of modules, what server is supporting---\n");
+                                            System.out.println("\n---List of modules, what server is supporting---");
+                                            if (moduleList.isEmpty()){
+                                                this.instance.notify("Server is not currently supporting any modules...");
+                                                setThreadReady();
+                                            }
                                             for (Object module : moduleList) {
 
 
@@ -353,7 +368,7 @@ public class SampleAPI extends Thread {
 
                                                 this.instance.notify("Module name: " + moduleName);
                                                 this.instance.notify("Module id: " + this.moduleIds);
-                                                this.instance.notify("Module description: " + moduleDesc + "\n");
+                                                this.instance.notify("Module description: " + moduleDesc);
                                                 //Next let's see trackables per target from module
 
 
@@ -413,21 +428,20 @@ public class SampleAPI extends Thread {
                     case EConnecting:
                         // Server listens in port 10000.
                         this.instance.notify("Starting connection to the server..");
-                        try{
+                        try {
                             clientSocket = new Socket(serverAddr, 10000);
-                        }
-                        catch (UnknownHostException e) {
+                        } catch (UnknownHostException e) {
                             this.instance.notify("Requested address not found.");
                             this.state = ClientState.EDetached;
                             break;
-                    }
+                        }
                         // Important to use timeouts when reading, this gives the thread a chance to send once in a while.
                         clientSocket.setSoTimeout(200);
                         istream = new DataInputStream(clientSocket.getInputStream());
                         ostream = new DataOutputStream(clientSocket.getOutputStream());
                         state = ClientState.EConnected;
                         this.instance.notify("Connected.\n");
-                        sendListeningMsg(getStatus);
+                        sendListeningMsg(init);
                         break;
                     default:
                         break;
@@ -445,73 +459,98 @@ public class SampleAPI extends Thread {
             }
         } // while (running)
     }
-    public enum sendPurpose {ChangeTracks, getStatus }
+
+    public enum sendPurpose {
+        AddOrRemoveTracks(1), init(2);
+        private final int id;
+
+        sendPurpose(int id) {
+            this.id = id;
+        }
+
+        public int getValue() {
+            return id;
+        }
+    }
+
+    public void commitChanges() throws InterruptedException {
+        sendListeningMsg(AddOrRemoveTracks);
+    }
+
+    public void initToServerState() throws InterruptedException {
+        sendListeningMsg(init);
+    }
 
     @SuppressWarnings("unchecked")
-    private void sendListeningMsg(sendPurpose purpose) throws IOException, InterruptedException {
+    private JSONObject createResponse(sendPurpose purpose) {
+        JSONObject root = new JSONObject();
+
+
+        //Add or removes trackable things on specific module and in specific target of module
+        root.put("Command", purpose.getValue());
+        if (purpose == init) {
+            root.put("WordsForModule", null);
+            return root;
+        }
+        List<String> toAdd;
+        List<String> toRemove;
+        JSONArray finalModuleArray = new JSONArray();
+
+        boolean anyChanges = false;
+        //Check all modules for changes
+        for (Module module : this.availableModules) {
+            JSONArray temp_list_addables = new JSONArray();
+            JSONArray temp_list_removables = new JSONArray();
+            JSONArray temp_TrackTargetPairs = new JSONArray();
+            JSONObject temp_ModuleObj = new JSONObject();
+            JSONObject temp_TargetObj = new JSONObject();
+            // Looping through modules
+            for (Module.ModuleTarget target : module.getModuleTargets()) {
+                //Looping through targets
+
+                if (target.isThereChanges()) {
+                    this.instance.notify("hmm" + target);
+                    toAdd = target.getTempAddables();
+                    toRemove = target.getTempRemovables();
+                    temp_list_addables.addAll(toAdd);
+                    temp_list_removables.addAll(toRemove);
+                    temp_TargetObj.put("TrackablesToAdd", temp_list_addables);
+                    temp_TargetObj.put("TrackablesToRemove", temp_list_removables);
+                    temp_TargetObj.put("ExtraInfo", target.getName());
+                    temp_TrackTargetPairs.add(temp_TargetObj);
+                    target.resetStatus();
+                    anyChanges = true;
+                }
+
+                //End of targets loop
+            }
+            if (anyChanges) {
+                temp_ModuleObj.put("ModuleName", module.getModuleName());
+                temp_ModuleObj.put("TrackableAndTargetPair", temp_TrackTargetPairs);
+                finalModuleArray.add(temp_ModuleObj);
+                anyChanges = false;
+            }
+            //End of modules loop
+        }
+        //Goes null if no changes
+        root.put("WordsForModule", finalModuleArray);
+
+
+        return root;
+
+    }
+
+
+    private void sendListeningMsg(sendPurpose purpose) throws InterruptedException {
         //Method for asking server to add/remove data
         // According to api
         //Command can be 1 or 2
         //
-        //  1  Change trackables to be followed
-        //  2  Get trackables in watch list
+        //  1  or init, Change trackables to be followed
+        //  2  or AddOrRemoveTracks Get trackables in watch list
 
         if (state == ClientState.EConnected) {
-            JSONObject root = new JSONObject();
-            if (purpose == getStatus){
-
-
-                root.put("Command", "2");
-            }
-            if (purpose == ChangeTracks){
-                //Add or removes trackable things on specific module and in specific target of module
-                root.put("Command", "1");
-                List<String> toAdd;
-                List<String> toRemove;
-                JSONArray finalModuleArray = new JSONArray();
-
-                boolean anyChanges = false;
-
-                for (Module module : this.availableModules){
-                    JSONArray temp_list_addables = new JSONArray();
-                    JSONArray temp_list_removables = new JSONArray();
-                    JSONArray temp_TrackTargetPairs = new JSONArray();
-                    JSONObject temp_ModuleObj = new JSONObject();
-                    JSONObject temp_TargetObj = new JSONObject();
-                    // Looping through modules
-                    for (Module.ModuleTarget target : module.getModuleTargets()){
-                        //Looping through targets
-
-                        if (target.isThereChanges){
-                            toAdd = target.getTempAddables();
-                            toRemove =target.getTempRemovables();
-                            temp_list_addables.addAll(toAdd);
-                            temp_list_removables.addAll(toRemove);
-                            temp_TargetObj.put("TrackablesToAdd", temp_list_addables);
-                            temp_TargetObj.put("TrackablesToRemove", temp_list_removables);
-                            temp_TargetObj.put("ExtraInfo", target.getName());
-                            temp_TrackTargetPairs.add(temp_TargetObj);
-                            target.resetStatus();
-                            anyChanges = true;
-                        }
-
-                        //End of targets loop
-                    }
-                    if (anyChanges){
-                    temp_ModuleObj.put("ModuleName", module.getModuleName());
-                    temp_ModuleObj.put("TrackableAndTargetPair", temp_TrackTargetPairs);
-                    finalModuleArray.add(temp_ModuleObj);
-                    anyChanges = false;
-                    }
-                    //End of modules loop
-                }
-                //Goes null if no changes
-                root.put("WordsForModule", finalModuleArray);
-
-            }
-
-            sendQueue.put(root.toJSONString());
-
+            sendQueue.put(createResponse(purpose).toJSONString());
         }
 
     }

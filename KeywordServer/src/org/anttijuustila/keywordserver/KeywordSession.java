@@ -136,6 +136,11 @@ public class KeywordSession extends Thread implements Observer {
                 } catch (KeywordPlugin.FailedToDoPluginThing e) {
 //					JSONObject toSend = createResponse("response", "Path does not exist", dir);
 //					sendResponse(toSend.toString());
+                }catch (SocketException e){
+                    System.out.println(sessionId + ": Session connection reseted. Closing..");
+                    manager.removeSession(this);
+                    e.printStackTrace();
+                    break;
                 }
 
             } // while

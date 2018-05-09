@@ -1,25 +1,10 @@
 package org.sample.client;
 
-import java.rmi.UnknownHostException;
+
 import java.util.Scanner;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.sample.api.SampleAPI;
 import org.sample.api.SampleAPI.ClientState;
 
@@ -33,7 +18,7 @@ class Main {
 
 }
 
-class SampleClient implements SampleAPI.SampleAPIListener{
+class SampleClient implements SampleAPI.SampleAPIListener {
 
 
     public void run() {
@@ -52,12 +37,12 @@ class SampleClient implements SampleAPI.SampleAPIListener{
             try {
                 TimeUnit.SECONDS.sleep(5);
                 if (client.myState() == ClientState.EConnected) {
-                   break;
-                }else {
+                    break;
+                } else {
                     client.detach();
                 }
 
-            }catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 System.out.println("Something went wrong..");
                 System.exit(1);
             }
@@ -67,14 +52,44 @@ class SampleClient implements SampleAPI.SampleAPIListener{
 
         while (true) {
             try {
-                TimeUnit.MILLISECONDS.sleep(50);
-            }catch (InterruptedException e){
-                System.out.println("Something went wrong..");
-                System.exit(1);
+                Thread.sleep(1000);
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
             if (client.stateOfThread()) {
-                client.setThreadNotReady();
+                //  client.setThreadNotReady();
+                while (true) {
+                    System.out.print("Stuck");
+                    if (client.getModules().isEmpty()) {
+                        System.out.println("No modules found currently. Reloading every one minute. ??");
+                        //TODO Solve this mysterious bug. No execution here. It Stops right above.
+                        // System.out.print("Stuck");
+                        long start = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(1)) {
+                            System.out.printf("Time left: %d seconds.\r", TimeUnit.MILLISECONDS.toSeconds(TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)));
+
+                            try {
+                                Thread.sleep(1000);
+
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        try {
+
+                            client.initToServerState();
+
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    } else {
+                        break;
+                    }
+                }
                 System.out.println("You can use given models to follow some events on specified targets. Sounds interesting? Riight..\n");
                 System.out.println("What would you like to do?");
                 printCommands();
@@ -83,25 +98,32 @@ class SampleClient implements SampleAPI.SampleAPIListener{
                     switch (input) {
                         case 1: {
                             printModules(client);
-                            pressEnter();
-                            client.setThreadReady();
+                            pressEnter(client);
+                            // client.setThreadReady();
                             break;
                         }
                         case 2: {
                             selectModuleAndShowTargets(reader, client);
-                            pressEnter();
-                            client.setThreadReady();
+                            pressEnter(client);
+                            //  client.setThreadReady();
                             break;
                         }
                         case 3: {
+                            client.setThreadNotReady();
                             AddOrRemoveTrackables(reader, client);
-                            pressEnter();
+                            pressEnter(client);
+                            //client.setThreadReady();
+                            break;
+                        }
+                        case 4: {
+                            runTest(reader, client);
+                            pressEnter(client);
                             client.setThreadReady();
                             break;
                         }
-                        default:{
+                        default: {
                             throw new InputMismatchException();
-                                                    }
+                        }
                     }
                 } catch (InputMismatchException e) {
                     System.out.println("Incorrect choice, please try again.");
@@ -114,39 +136,66 @@ class SampleClient implements SampleAPI.SampleAPIListener{
 
 
     }
-    private void pressEnter(){
 
-        System.out.println("Press Enter to continue...");
-        try
-        {
-            System.in.read();
-        }
-        catch(Exception e)
-        {
-            System.out.println("You pressed something else as well..");
+    private void pressEnter(SampleAPI client) {
+        while (true) {
+            if (client.stateOfThread()) {
+                System.out.println("Press Enter to continue...");
+                try {
+                    System.in.read();
+                    break;
+                } catch (Exception e) {
+                    System.out.println("You pressed something else as well..");
+                }
+            }
         }
 
     }
-    private void AddOrRemoveTrackables( Scanner reader, SampleAPI client){
 
+    private void AddOrRemoveTrackables(Scanner reader, SampleAPI client) {
+
+
+    }
+
+    private void runTest(Scanner reader, SampleAPI client) {
+        boolean isTargetNew = true;
         int selectedModule = 1;
-        String ExtraInfo1 = "ContryNews";
+        String ExtraInfo = "ContryNews";
         String ExtraInfo2 = "SomeStuff";
-        String [] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
-        String [] testRemovables = {"Heipa", "Vaan"};
+        String[] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
+        String[] testRemovables = {"Heippa", "Vaan"};
         ArrayList<String> trackablesToAdd = new ArrayList<String>(Arrays.asList(testAddables));
         ArrayList<String> trackablesToremove = new ArrayList<String>(Arrays.asList(testRemovables));
-        for (SampleAPI.Module module : client.getModules() ){
+        for (SampleAPI.Module module : client.getModules()) {
 
-            if (selectedModule == module.getId()){
-                for (SampleAPI.Module.ModuleTarget target : module.getModuleTargets()){
-                    if (target.getName() == ExtraInfo1){
+            if (selectedModule == module.getId()) {
+                for (SampleAPI.Module.ModuleTarget target : module.getModuleTargets()) {
+                    if (target.getName().equals(ExtraInfo)) {
+                        //if target exists
+                        System.out.println(trackablesToAdd);
                         target.storeTempAddables(trackablesToAdd);
                         target.storeTempRemovables(trackablesToremove);
+                        target.newChanges();
+                        isTargetNew = false;
+                        break;
                     }
+
+                }
+                if (isTargetNew) {
+                    SampleAPI.Module.ModuleTarget newTarget = module.new ModuleTarget(ExtraInfo);
+                    newTarget.storeTempAddables(trackablesToAdd);
+                    newTarget.storeTempRemovables(trackablesToremove);
+                    newTarget.newChanges();
+                    module.addTarget(newTarget);
+                    System.out.printf("New target %s added.\n", ExtraInfo);
                 }
             }
 
+        }
+        try {
+            client.commitChanges();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
 
@@ -154,6 +203,10 @@ class SampleClient implements SampleAPI.SampleAPIListener{
 
     private void printModules(SampleAPI client) {
         List<SampleAPI.Module> modules = client.getModules();
+        if (modules.isEmpty()) {
+            modulesNotFound(client);
+            return;
+        }
         System.out.println("\n---List of Modules--\n");
         System.out.printf("%-15s %15s\n", "NAME", "ID");
         for (SampleAPI.Module module : modules) {
@@ -163,12 +216,27 @@ class SampleClient implements SampleAPI.SampleAPIListener{
         }
     }
 
+    private void modulesNotFound(SampleAPI client) {
+        System.out.println("Looks like server is not currently supporting modules at all...");
+        System.out.println("Reloading modules from server...");
+        try {
+            client.initToServerState();
+        } catch (InterruptedException e) {
+            System.out.println("Something went wrong when reloading...");
+            e.printStackTrace();
+        }
+    }
+
     private void selectModuleAndShowTargets(Scanner reader, SampleAPI client) {
         System.out.println("Select Module by giving corresponding ID: ");
         while (true) {
             try {
                 int input = reader.nextInt();
                 List<SampleAPI.Module> modules = client.getModules();
+                if (modules.isEmpty()) {
+                    modulesNotFound(client);
+                    return;
+                }
                 for (SampleAPI.Module module : modules) {
                     if (module.getId() == input) {
                         System.out.printf("Module '%s' selected. Printing trackable targets: \n", module.getModuleName());
@@ -206,12 +274,14 @@ class SampleClient implements SampleAPI.SampleAPIListener{
         System.out.println("Press 1. to get list of modules.");
         System.out.println("Press 2. to select module and check your targets.");
         System.out.println("Press 3. to add or remove trackable objects from specified target on speficied model.");
+        System.out.println("Press 4. to run test sample.");
     }
 
     public void notify(String data) {
         System.out.println(data);
     }
-    public void changeEventHappened(String response, String text, String file){
+
+    public void changeEventHappened(String response, String text, String file) {
         System.out.print("Do something");
     }
 

@@ -16,7 +16,7 @@ public class SamplePlugin implements KeywordPlugin {
 
     private List<KeywordTrackable> trackables = new ArrayList<>();
 
-    public void startPlugin() throws KeywordPlugin.FailedToDoPluginThing {
+    public void startPlugin() {
         Timer timer = new Timer();
 
         while (true) {
@@ -47,7 +47,7 @@ public class SamplePlugin implements KeywordPlugin {
         return this.trackables;
 }
 
-    public void addTrackables(List<String> trackables, String extraInfo, Observer observer) throws KeywordPlugin.FailedToDoPluginThing {
+    public void addTrackables(List<String> trackables, String extraInfo, Observer observer) {
         if (!this.trackables.isEmpty()) {
             //Iterate through list to find existing object with same extra info
             for (KeywordTrackable sample : this.trackables){
@@ -66,7 +66,7 @@ public class SamplePlugin implements KeywordPlugin {
 
     }
 
-    public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws KeywordPlugin.FailedToDoPluginThing{
+    public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) {
         if (!this.trackables.isEmpty()) {
             //Iterate through list to find existing object with same extra info
             for (KeywordTrackable sample : this.trackables){

@@ -5,42 +5,42 @@ import java.util.List;
 import java.util.Observer;
 
 public interface KeywordPlugin {
-    public void startPlugin() throws FailedToDoPluginThing;
+    void startPlugin() throws FailedToDoPluginThing;
 
-    public String getPluginName();
+    String getPluginName();
 
-    public String getPluginDesc();
+    String getPluginDesc();
 
-    public String getPluginUsage();
+    String getPluginUsage();
 
-    public List<KeywordTrackable> getAllTrackables();
+    List<KeywordTrackable> getAllTrackables();
 
-    public void addTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing;
+    void addTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing;
 
-    public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing;
+    void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing;
 
-    public interface KeywordTrackable {
+    interface KeywordTrackable {
 
-        public List<String> getTrackables();
+        List<String> getTrackables();
 
-        public String getExtraInfo();
+        String getExtraInfo();
 
-        //Return true on success, false on failure
-        public boolean addTrackable(String newTrack);
-        public boolean removeTrackable(String trackToRemove);
+
+        boolean addTrackable(String newTrack);
+        boolean removeTrackable(String trackToRemove);
     }
 
-    public interface KeywordNotifyObject {
-        public String getModuleName();
+    interface KeywordNotifyObject {
+        String getModuleName();
 
-        public String getModuleExtraInfo();
+        String getModuleExtraInfo();
 
-        public List<String> getTrackablesFound();
+        List<String> getTrackablesFound();
 
 
     }
 
-    public class FailedToDoPluginThing extends Exception {
+    class FailedToDoPluginThing extends Exception {
         public FailedToDoPluginThing() {
             super();
         }
