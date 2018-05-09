@@ -19,6 +19,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import static org.sample.client.SampleClient.sendPurpose.*;
+
 
 //Example implementation of client, which can follow contents from server regardless of types, what server supports
 
@@ -201,13 +203,6 @@ public class SampleClient extends Thread {
         state = ClientState.EConnecting;
     }
 
-    public void addKeyword(String word) throws IOException, InterruptedException {
-        if (keywords.add(word)) {
-            List<String> tmp = new Vector<String>();
-            tmp.add(word);
-            sendListeningMsg(tmp);
-        }
-    }
 
     private void replaceTrackableDataToTargetInModule(String moduleName, String target, List<String> trackables) {
 
@@ -226,18 +221,6 @@ public class SampleClient extends Thread {
     }
 
 
-    public void addKeywords(Set<String> words) throws IOException, InterruptedException {
-        List<String> tmp = new Vector<String>();
-        for (String w : words) {
-            if (keywords.add(w)) {
-                tmp.add(w);
-            }
-        }
-        if (tmp.size() > 0) {
-            sendListeningMsg(tmp);
-        }
-
-    }
 
     public void removeKeyword(String word) throws IOException, InterruptedException {
 
@@ -368,17 +351,16 @@ public class SampleClient extends Thread {
 
                                                 }
                                                 setThreadReady();
-                                                //TODO Trackable found
 
 
                                             }
                                         }
 
-                                        // Get the required elements, response, text and file.
-                                        JSONArray WordsForModule = (JSONArray) root.get("WordsForModule"); // request/response
-                                        String notification = (String) root.get("text");
-                                        String file = (String) root.get("file");
-                                        // Notify the listener.
+                                        if (response == 3) {
+                                            //TODO Trackables found
+                                            this.instance.printFromThread("We got a hit!");
+                                        }
+
 
                                     }
                                 }
@@ -413,7 +395,7 @@ public class SampleClient extends Thread {
                         ostream = new DataOutputStream(clientSocket.getOutputStream());
                         state = ClientState.EConnected;
                         this.instance.printFromThread("Connected.\n");
-                        sendListeningMsg(null);
+                        sendListeningMsg(null, getStatus);
                         break;
                     default:
                         break;
@@ -431,10 +413,10 @@ public class SampleClient extends Thread {
             }
         } // while (running)
     }
-
+    public enum sendPurpose {ChangeTracks, getStatus }
 
     @SuppressWarnings("unchecked")
-    private void sendListeningMsg(List<String> words) throws IOException, InterruptedException {
+    private void sendListeningMsg(List<String> words, sendPurpose purpose) throws IOException, InterruptedException {
         // According to api
         //Command can be 1 or 2
         //
@@ -443,8 +425,16 @@ public class SampleClient extends Thread {
 
         if (state == ClientState.EConnected) {
             JSONObject root = new JSONObject();
+            if (purpose == getStatus){
 
-            root.put("Command", "2");
+
+                root.put("Command", "2");
+            }
+            if (purpose == ChangeTracks){
+                root.put("Command", "1");
+
+            }
+
 //            JSONArray moduleWords = new JSONArray();
 //            if (null == words) {
 //                words = keywords;
@@ -497,11 +487,12 @@ class runSample {
                 printCommands();
                 try {
                     int input = reader.nextInt();
-                    switch (input){
+                    switch (input) {
                         case 1: {
                             printModules(client);
                             break;
-                        }case 2: {
+                        }
+                        case 2: {
                             selectModuleAndShowTargets(reader, client);
                             break;
                         }
@@ -511,14 +502,13 @@ class runSample {
                 }
 
 
-
-
             }
         }
 
 
     }
-    private void printModules(SampleClient client){
+
+    private void printModules(SampleClient client) {
         List<SampleClient.Module> modules = client.getModules();
         System.out.println("\n---List of Modules--\n");
         System.out.printf("%-15s %15s\n", "NAME", "ID");
@@ -528,25 +518,26 @@ class runSample {
 
         }
     }
-    private void selectModuleAndShowTargets(Scanner reader, SampleClient client){
+
+    private void selectModuleAndShowTargets(Scanner reader, SampleClient client) {
         System.out.println("Select Module by giving corresponding ID: ");
-        while (true){
+        while (true) {
             try {
                 int input = reader.nextInt();
                 List<SampleClient.Module> modules = client.getModules();
-                for (SampleClient.Module module: modules){
-                    if (module.getId() == input){
+                for (SampleClient.Module module : modules) {
+                    if (module.getId() == input) {
                         System.out.println("Module selected. Printing trackable targets: ");
                         List<SampleClient.ModuleTarget> targets = module.getModuleTargets();
-                        if (targets.isEmpty()){
+                        if (targets.isEmpty()) {
                             System.out.println("Looks like you have added nothing to targets.");
                             return;
                         }
                         System.out.println("\n---List of Targets--");
-                        for (SampleClient.ModuleTarget target : targets){
+                        for (SampleClient.ModuleTarget target : targets) {
                             System.out.printf("Name: %s\n", target.getName());
                             System.out.print("Targets: %s");
-                            for (String trackable : target.getTrackables()){
+                            for (String trackable : target.getTrackables()) {
                                 System.out.print(trackable + ", ");
                             }
                             System.out.println("\n");
