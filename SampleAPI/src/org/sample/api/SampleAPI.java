@@ -1,5 +1,6 @@
 package org.sample.api;
 
+import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -97,6 +98,12 @@ public class SampleAPI extends Thread {
             }
             public void storeTempAddables(ArrayList<String> addables){
                 this.temp_trackablesToAdd = addables;
+            }
+            public List<String> getTempAddables(){
+                return this.temp_trackablesToAdd;
+            }
+            public List<String> getTempRemovables(){
+                return this.temp_trackablesToRemove;
             }
             public void storeTempRemovables(ArrayList<String> removables){
                 this.temp_trackablesToAdd = removables;
@@ -250,20 +257,6 @@ public class SampleAPI extends Thread {
             }
 
         }
-    }
-
-
-
-    public void removeKeyword(String word) throws IOException, InterruptedException {
-
-    }
-
-    public void removeKeywords(Set<String> words) throws IOException, InterruptedException {
-
-    }
-
-    public List<String> keywords() {
-        return keywords;
     }
 
     public void detach() {
@@ -420,7 +413,14 @@ public class SampleAPI extends Thread {
                     case EConnecting:
                         // Server listens in port 10000.
                         this.instance.notify("Starting connection to the server..");
-                        clientSocket = new Socket(serverAddr, 10000);
+                        try{
+                            clientSocket = new Socket(serverAddr, 10000);
+                        }
+                        catch (UnknownHostException e) {
+                            this.instance.notify("Requested address not found.");
+                            this.state = ClientState.EDetached;
+                            break;
+                    }
                         // Important to use timeouts when reading, this gives the thread a chance to send once in a while.
                         clientSocket.setSoTimeout(200);
                         istream = new DataInputStream(clientSocket.getInputStream());
@@ -449,25 +449,6 @@ public class SampleAPI extends Thread {
 
     @SuppressWarnings("unchecked")
     private void sendListeningMsg(sendPurpose purpose) throws IOException, InterruptedException {
-        //Method for initial request for server
-        //We want data from server, what we are able to do
-        // According to api
-        //Command can be 1 or 2
-        //
-        //  1  Change trackables to be followed
-        //  2  Get trackables in watch list
-
-        if (state == ClientState.EConnected) {
-            JSONObject root = new JSONObject();
-            if (purpose == getStatus){
-                root.put("Command", "2");
-            }
-             sendQueue.put(root.toJSONString());
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void sendListeningMsg(List<String> words, sendPurpose purpose, Module module) throws IOException, InterruptedException {
         //Method for asking server to add/remove data
         // According to api
         //Command can be 1 or 2
@@ -485,24 +466,52 @@ public class SampleAPI extends Thread {
             if (purpose == ChangeTracks){
                 //Add or removes trackable things on specific module and in specific target of module
                 root.put("Command", "1");
+                List<String> toAdd;
+                List<String> toRemove;
+                JSONArray finalModuleArray = new JSONArray();
 
-                JSONArray wordsForModule = new JSONArray();
-                JSONObject temp_obj = new JSONObject();
+                boolean anyChanges = false;
+
+                for (Module module : this.availableModules){
+                    JSONArray temp_list_addables = new JSONArray();
+                    JSONArray temp_list_removables = new JSONArray();
+                    JSONArray temp_TrackTargetPairs = new JSONArray();
+                    JSONObject temp_ModuleObj = new JSONObject();
+                    JSONObject temp_TargetObj = new JSONObject();
+                    // Looping through modules
+                    for (Module.ModuleTarget target : module.getModuleTargets()){
+                        //Looping through targets
+
+                        if (target.isThereChanges){
+                            toAdd = target.getTempAddables();
+                            toRemove =target.getTempRemovables();
+                            temp_list_addables.addAll(toAdd);
+                            temp_list_removables.addAll(toRemove);
+                            temp_TargetObj.put("TrackablesToAdd", temp_list_addables);
+                            temp_TargetObj.put("TrackablesToRemove", temp_list_removables);
+                            temp_TargetObj.put("ExtraInfo", target.getName());
+                            temp_TrackTargetPairs.add(temp_TargetObj);
+                            target.resetStatus();
+                            anyChanges = true;
+                        }
+
+                        //End of targets loop
+                    }
+                    if (anyChanges){
+                    temp_ModuleObj.put("ModuleName", module.getModuleName());
+                    temp_ModuleObj.put("TrackableAndTargetPair", temp_TrackTargetPairs);
+                    finalModuleArray.add(temp_ModuleObj);
+                    anyChanges = false;
+                    }
+                    //End of modules loop
+                }
+                //Goes null if no changes
+                root.put("WordsForModule", finalModuleArray);
 
             }
 
-//            JSONArray moduleWords = new JSONArray();
-//            if (null == words) {
-//                words = keywords;
-//            }
-//            if (null != words && words.size() > 0) {
-//                JSONArray array = new JSONArray();
-//                for (String keyword : words) {
-//                    array.add(keyword);
-//                }
-//                root.put("keywords", array);
-//            }
             sendQueue.put(root.toJSONString());
+
         }
 
     }

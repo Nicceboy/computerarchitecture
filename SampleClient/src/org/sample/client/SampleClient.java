@@ -1,5 +1,6 @@
 package org.sample.client;
 
+import java.rmi.UnknownHostException;
 import java.util.Scanner;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -13,12 +14,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.sample.api.SampleAPI;
+import org.sample.api.SampleAPI.ClientState;
 
 class Main {
     public static void main(String[] args) {
@@ -41,11 +44,35 @@ class SampleClient implements SampleAPI.SampleAPIListener{
         System.out.println("Initializing api...");
         SampleAPI client = new SampleAPI(this);
         client.prepareClient();
-        System.out.println("Give address, where we should connect: \n");
-        String address = reader.nextLine();
-        client.attach(address);
+        while (true) {
+            System.out.println("Give address, where we should connect: \n");
+            String address = reader.nextLine();
+            client.attach(address);
+
+            try {
+                TimeUnit.SECONDS.sleep(5);
+                if (client.myState() == ClientState.EConnected) {
+                   break;
+                }else {
+                    client.detach();
+                }
+
+            }catch (InterruptedException e){
+                System.out.println("Something went wrong..");
+                System.exit(1);
+            }
+
+        }
+
 
         while (true) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(50);
+            }catch (InterruptedException e){
+                System.out.println("Something went wrong..");
+                System.exit(1);
+            }
+
             if (client.stateOfThread()) {
                 client.setThreadNotReady();
                 System.out.println("You can use given models to follow some events on specified targets. Sounds interesting? Riight..\n");
@@ -56,19 +83,70 @@ class SampleClient implements SampleAPI.SampleAPIListener{
                     switch (input) {
                         case 1: {
                             printModules(client);
+                            pressEnter();
+                            client.setThreadReady();
                             break;
                         }
                         case 2: {
                             selectModuleAndShowTargets(reader, client);
+                            pressEnter();
+                            client.setThreadReady();
                             break;
                         }
+                        case 3: {
+                            AddOrRemoveTrackables(reader, client);
+                            pressEnter();
+                            client.setThreadReady();
+                            break;
+                        }
+                        default:{
+                            throw new InputMismatchException();
+                                                    }
                     }
                 } catch (InputMismatchException e) {
                     System.out.println("Incorrect choice, please try again.");
+                    client.setThreadReady();
                 }
 
 
             }
+        }
+
+
+    }
+    private void pressEnter(){
+
+        System.out.println("Press Enter to continue...");
+        try
+        {
+            System.in.read();
+        }
+        catch(Exception e)
+        {
+            System.out.println("You pressed something else as well..");
+        }
+
+    }
+    private void AddOrRemoveTrackables( Scanner reader, SampleAPI client){
+
+        int selectedModule = 1;
+        String ExtraInfo1 = "ContryNews";
+        String ExtraInfo2 = "SomeStuff";
+        String [] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
+        String [] testRemovables = {"Heipa", "Vaan"};
+        ArrayList<String> trackablesToAdd = new ArrayList<String>(Arrays.asList(testAddables));
+        ArrayList<String> trackablesToremove = new ArrayList<String>(Arrays.asList(testRemovables));
+        for (SampleAPI.Module module : client.getModules() ){
+
+            if (selectedModule == module.getId()){
+                for (SampleAPI.Module.ModuleTarget target : module.getModuleTargets()){
+                    if (target.getName() == ExtraInfo1){
+                        target.storeTempAddables(trackablesToAdd);
+                        target.storeTempRemovables(trackablesToremove);
+                    }
+                }
+            }
+
         }
 
 
