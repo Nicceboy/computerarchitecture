@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -75,8 +76,9 @@ public class KeywordSession extends Thread implements Observer {
 
                             int command =  Integer.parseInt(mainJsonObj.get("Command").toString());
 
-                            JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
                             if (command == 1) {
+                            JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
+
                                 for (Object pairObj : wordsForModule) {
 
                                     List<String> trackablesToAdd = new ArrayList<>();
@@ -122,6 +124,10 @@ public class KeywordSession extends Thread implements Observer {
                                         }
                                     }
                                 }
+                            }
+                            if (command ==2) {
+                                System.out.println(sessionId + ": Sending detailed WatchList response. " + data);
+                                sendResponse(createDetailedWatchListResponse().toJSONString());
                             }
                         }
                     }
