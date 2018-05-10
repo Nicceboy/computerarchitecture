@@ -22,7 +22,7 @@ class Main {
 class SampleClient implements SampleAPI.SampleAPIListener {
 
 
-    public void run() {
+    void run() {
 
 
         Scanner reader = new Scanner(System.in);

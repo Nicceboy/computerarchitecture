@@ -341,33 +341,75 @@ public class SampleAPI extends Thread {
                                         notifyMessage.append(String.format("ResponseType: %s\n" ,response));
                                         notifyMessage.append(String.format("Additional info: %s\n" ,addinfo));
 
-                                        if(response == 1 ){
-                                            this.instance.notify(notifyMessage.toString());
-                                            setThreadReady();
-                                        }
+                                        switch (response) {
 
-
-                                        //Loop through modules, what server gave us. Enable new ones, if there are any
-                                        //Get list of all trackables to this api in all modules and all targets in those modules
-                                        if (response == 2) {
-
-                                            if (moduleList.isEmpty()){
-                                                notifyMessage.append("Server is not currently supporting any modules...\n");
+                                            case 1:  {
                                                 this.instance.notify(notifyMessage.toString());
                                                 setThreadReady();
-                                            }else {
-                                                notifyMessage.append("\n---List of modules, what server is supporting---\n");
-                                                parseModules(moduleList, notifyMessage);
-                                                this.instance.notify(notifyMessage.toString());
-                                                setThreadReady();
+                                                break;
                                             }
 
 
-                                        }
+                                            //Loop through modules, what server gave us. Enable new ones, if there are any
+                                            //Get list of all trackables to this api in all modules and all targets in those modules
+                                            case 2: {
 
-                                        if (response == 3) {
-                                            //TODO Trackables found
-                                            this.instance.notify("We got a hit!");
+                                                if (moduleList.isEmpty()) {
+                                                    notifyMessage.append("Server is not currently supporting any modules...\n");
+                                                    this.instance.notify(notifyMessage.toString());
+                                                    setThreadReady();
+                                                } else {
+                                                    notifyMessage.append("\n---List of modules, what server is supporting---\n");
+                                                    parseModules(moduleList, notifyMessage);
+                                                    this.instance.notify(notifyMessage.toString());
+                                                    setThreadReady();
+                                                }
+                                                break;
+
+
+                                            }
+
+                                            case 3: {
+                                                List<String> foundThings = new ArrayList<>();
+                                                String moduleName;
+                                                String moduleTarget = null;
+                                                JSONObject notifyContent = (JSONObject) root.get("NotificationContent");
+                                                if (notifyContent.containsKey("ModuleName")) {
+                                                    moduleName = (String) notifyContent.get("ModuleName");
+                                                    if (notifyContent.containsKey("ModuleTarget")) {
+                                                        moduleTarget = (String) notifyContent.get("ModuleTarget");
+                                                    }
+
+                                                    if (notifyContent.containsKey("Trackables")) {
+                                                        for (Object trackable : (JSONArray) notifyContent.get("Trackables")) {
+                                                            String hit = (String) trackable;
+                                                            foundThings.add(hit);
+                                                        }
+                                                    }
+                                                    notifyMessage.append("\nWe got a hit! Following trackables have been found in following contex: \n");
+                                                    notifyMessage.append(String.format("Module name: %s\n", moduleName));
+                                                    notifyMessage.append(String.format("Target name: %s\n", moduleTarget));
+                                                    for (String trackable : foundThings) {
+                                                        notifyMessage.append(String.format(trackable + ", "));
+                                                    }
+                                                    this.instance.notify(notifyMessage.toString());
+
+
+                                                } else {
+                                                    notifyMessage.append("\nWe got a notification, but data was invalid... \n");
+                                                }
+                                                break;
+
+
+                                            }
+                                            case 4:{
+                                                notifyMessage.append("\nThere was an error on server side.. \n");
+                                                this.instance.notify(notifyMessage.toString());
+                                                break;
+                                            }
+                                            default:{
+                                                break;
+                                            }
                                         }
 
 
@@ -581,7 +623,7 @@ public class SampleAPI extends Thread {
         if (state == ClientState.EConnected) {
             sendQueue.put(createResponse(purpose).toJSONString());
         }else{
-            this.instance.notify("Unable to send data. Connection lost,\n");
+            this.instance.notify("Unable to send data. Connection lost.\n");
             detach();
             System.exit(0);
         }
