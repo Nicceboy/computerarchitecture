@@ -19,9 +19,9 @@
 
 
     <string name="pref_title_server_settings">Server settings</string>
-    <string name="pref_default_server_address">192.168.1.1</string>
+    <string name="pref_default_server_address">10.0.2.2</string>
     <string name="action_settings">Settings</string>
-    <string name="pref_default_server_path">/Users/anttijuustila/Documents/test</string>
+    <string name="pref_default_server_path">/Users/Alo/Documents/test</string>
     <string name="pref_title_server_path_settings">Path to watch</string>
 
 
