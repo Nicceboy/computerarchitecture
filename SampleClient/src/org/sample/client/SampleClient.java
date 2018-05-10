@@ -174,6 +174,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         int selectedModule = 1;
         String ExtraInfo = "ContryNews";
         String ExtraInfo2 = "SomeStuff";
+        String ExtraInfo3 = "C:\\Users\\Niklas Saari\\Desktop\\CompArch\\artifacts\\KeywordServer_jar\\plugins";
         String[] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
         String[] testRemovables = {"Heippa", "Vaan"};
         ArrayList<String> trackablesToAdd = new ArrayList<String>(Arrays.asList(testAddables));
@@ -182,7 +183,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
             if (selectedModule == module.getId()) {
                 for (SampleAPI.Module.ModuleTarget target : module.getModuleTargets()) {
-                    if (target.getName().equals(ExtraInfo)) {
+                    if (target.getName().equals(ExtraInfo3)) {
                         target.storeTempAddables(trackablesToAdd);
                         target.storeTempRemovables(trackablesToremove);
                         target.newChanges();
@@ -192,7 +193,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
                 }
                 if (isTargetNew) {
-                    SampleAPI.Module.ModuleTarget newTarget = module.new ModuleTarget(ExtraInfo);
+                    SampleAPI.Module.ModuleTarget newTarget = module.new ModuleTarget(ExtraInfo3);
                     newTarget.storeTempAddables(trackablesToAdd);
                     newTarget.storeTempRemovables(trackablesToremove);
                     newTarget.newChanges();
@@ -218,10 +219,11 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             return;
         }
         System.out.println("\n---List of Modules--\n");
-        System.out.printf("%-15s %15s\n", "NAME", "ID");
+        System.out.printf("%-30s %15s\n", "NAME", "ID");
         for (SampleAPI.Module module : modules) {
-            System.out.println(String.format("%-30s", " ").replace(' ', '-'));
-            System.out.printf("%-15s %15d\n", module.getModuleName(), module.getId());
+            System.out.println(String.format("%-45s", " ").replace(' ', '-'));
+            System.out.printf("%-30s %15d\n", module.getModuleName(), module.getId());
+            System.out.println(String.format("%-45s", " ").replace(' ', '-'));
 
         }
     }

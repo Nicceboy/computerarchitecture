@@ -191,7 +191,13 @@ public class KeywordSession extends Thread implements Observer {
         System.out.println(sessionId + ": Change event happened in " + event.getModuleName());
         System.out.println(sessionId + ": " + event.getTrackablesFound() + " has been found in " + event.getModuleExtraInfo());
 
-        this.createTrackableFoundResponse(event);
+
+        try {
+            sendResponse(this.createTrackableFoundResponse(event).toJSONString());
+        } catch (IOException e) {
+            System.out.println(sessionId + ": Error while sending notification.");
+            e.printStackTrace();
+        }
     }
 
     @SuppressWarnings("unchecked")

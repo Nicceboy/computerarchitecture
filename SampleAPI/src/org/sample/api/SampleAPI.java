@@ -76,6 +76,9 @@ public class SampleAPI extends Thread {
         public void removeTarget(ModuleTarget target) {
             this.moduleTargets.removeIf(a -> a.getName().equals(target.getName()));
         }
+        public void removeAllTargets(){
+            this.moduleTargets = new ArrayList<>();
+        }
 
 
         public class ModuleTarget {
@@ -135,6 +138,7 @@ public class SampleAPI extends Thread {
             void replaceTrackables(List<String> newTargets) {
                 this.trackables = newTargets;
             }
+
 
             public List<String> getTrackables() {
                 return this.trackables;
@@ -260,6 +264,7 @@ public class SampleAPI extends Thread {
         for (Module module : this.availableModules) {
             if (module.getModuleName().equals(moduleName)) {
                 for (Module.ModuleTarget ttarget : module.getModuleTargets()) {
+                    this.instance.notify("Replacing target" + target + " with " + trackables);
                     if (ttarget.getName().equals(target)) {
                         ttarget.replaceTrackables(trackables);
 
@@ -329,6 +334,7 @@ public class SampleAPI extends Thread {
                                         // Convert bytes to String, remembering that data is sent & received as UTF-16.
                                         String data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
                                         notifyMessage.append("\n---- Data received ---\n");
+                                        System.out.println("Data received: " + data);
                                         JSONObject root;
 
                                         // Parse the string to JSON object.
@@ -344,6 +350,7 @@ public class SampleAPI extends Thread {
                                         switch (response) {
 
                                             case 1:  {
+                                                parseModules(moduleList, notifyMessage);
                                                 this.instance.notify(notifyMessage.toString());
                                                 setThreadReady();
                                                 break;
@@ -359,7 +366,8 @@ public class SampleAPI extends Thread {
                                                     this.instance.notify(notifyMessage.toString());
                                                     setThreadReady();
                                                 } else {
-                                                    notifyMessage.append("\n---List of modules, what server is supporting---\n");
+                                                    notifyMessage.append("\nList of modules, what server is supporting\n");
+                                                    notifyMessage.append(String.format("%-45s\n", " ").replace(' ', '-'));
                                                     parseModules(moduleList, notifyMessage);
                                                     this.instance.notify(notifyMessage.toString());
                                                     setThreadReady();
@@ -503,21 +511,57 @@ public class SampleAPI extends Thread {
                     break;
                 }
             }
-
+            int moduleId = this.moduleIds;
             if (addnew) {
                 //Create new module if it does not exist
                 this.moduleIds += 1;
-                this.availableModules.add(new Module(moduleName, moduleDesc, moduleUsage, this.moduleIds));
+                moduleId = this.moduleIds;
+                this.availableModules.add(new Module(moduleName, moduleDesc, moduleUsage, moduleId));
+            }else{
+                for (Module moduleWithId : this.availableModules){
+                if(moduleWithId.getModuleName().equals(moduleName))
+                    moduleId=moduleWithId.getId();
+                }
             }
-
+            notifyMessage.append(String.format("%-45s\n", " ").replace(' ', '-'));
             notifyMessage.append(String.format("Module name: %s\n", moduleName));
-            notifyMessage.append(String.format("Module id: %d\n", this.moduleIds));
+            notifyMessage.append(String.format("Module id: %d\n", moduleId));
             notifyMessage.append(String.format("Module description: %s\n", moduleDesc));
+            notifyMessage.append(String.format("%-45s\n", " ").replace(' ', '-'));
 
             //Next let's see trackables per target from module
 
 
             JSONArray watchList = (JSONArray) mod.get("WatchList");
+            if (watchList.isEmpty()){
+                for (Module moduleWhereTargetsRemoved : this.availableModules){
+                    moduleWhereTargetsRemoved.removeAllTargets();
+                }
+
+            }
+            else {
+            boolean RemoveTarget = true;
+            //remove all targets which not in new list -> keeps only targets what we get from server
+            for (Module moduleWithWrongTarget : this.availableModules) {
+                if (moduleWithWrongTarget.getModuleName().equals(moduleName)){
+                    for(Module.ModuleTarget target : moduleWithWrongTarget.getModuleTargets()){
+                        for (Object watch : watchList) {
+                            JSONObject watchItem = (JSONObject) watch;
+                            String moduleTarget = (String) watchItem.get("ModuleTarget");
+                            if(target.getName().equals(moduleTarget)){
+                                RemoveTarget = false;
+                            }
+                        }
+                        if(RemoveTarget){
+                            moduleWithWrongTarget.removeTarget(target);
+                        }
+
+
+                    }
+                }
+
+
+            }}
 
             for (Object watch : watchList) {
 
