@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SamplePlugin implements KeywordPlugin {
+public class SamplePlugin extends Thread implements KeywordPlugin {
     private final String name = "SamplePlugin";
     private final String desc = "This plugin is just for testing purposes.";
     private final String usage = "You can use this plugin to test program.";
@@ -17,6 +17,26 @@ public class SamplePlugin implements KeywordPlugin {
     private List<KeywordTrackable> trackables = new ArrayList<>();
 
     public void startPlugin() {
+
+
+    }
+    class observableThing extends Observable{
+        private String happening;
+
+        public observableThing(String string, Observer o) {
+            super();
+            this.happening = string;
+            addObserver(o);
+        }
+        public void setDirty() {
+            setChanged();
+        }
+
+    }
+
+    @Override
+    public void run() {
+        super.run();
         Timer timer = new Timer();
 
         while (true) {
@@ -27,7 +47,6 @@ public class SamplePlugin implements KeywordPlugin {
                 }
             }, 60*1000); //One minute timer
         }
-
     }
 
     public String getPluginName() {
@@ -83,7 +102,7 @@ public class SamplePlugin implements KeywordPlugin {
         }
 
     }
-}
+
     //Have to create own class for each different type of extraInfo
     //For example different Twitter account, File path and so on.
     //Each type of info might have different content, what we are going to follow up
@@ -125,10 +144,10 @@ public class SamplePlugin implements KeywordPlugin {
         }
     }
 
-     class KeywordNotifySample implements KeywordPlugin.KeywordNotifyObject {
+     public class KeywordNotifySample implements KeywordPlugin.KeywordNotifyObject {
 
         public String getModuleName(){
-            return "Sample module.";
+            return SamplePlugin.this.getPluginName();
         }
 
         public String getModuleExtraInfo(){
@@ -159,3 +178,4 @@ public class SamplePlugin implements KeywordPlugin {
 //            super(cause);
 //        }
 //    }
+}

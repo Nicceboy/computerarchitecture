@@ -23,9 +23,8 @@ import org.json.simple.parser.ParseException;
 import static org.sample.api.SampleAPI.sendPurpose.*;
 
 
-//Example implementation of api, which can follow contents from server regardless of types, what server supports
+//Example implementation of API in Java, which can follow contents from server regardless of modules/plugins, what server supports
 
-//Server is supporting plugins, and so is the protocol to Client
 
 
 public class SampleAPI extends Thread {
@@ -190,8 +189,10 @@ public class SampleAPI extends Thread {
 
     public enum ClientState {EDetached, EConnecting, EConnected}
 
-    //Way to access main function methods.
+    //Use methods of implementing class
     private SampleAPIListener instance;
+
+
     private volatile boolean isThreadReady = false;
 
     private Socket clientSocket = null;
