@@ -1,10 +1,7 @@
 package org.sample.client;
-
-
 import java.util.Scanner;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
 import org.sample.api.SampleAPI;
 import org.sample.api.SampleAPI.ClientState;
 
@@ -17,6 +14,10 @@ class Main {
     }
 
 }
+
+//This Class is to implement basic client on console for our SampleAPI
+//SampleAPI is implementation of our protocol in Java language
+//Once Client is implemented according to our protocol, it does not need any updates, if our server gains or loses plugins (alias Modules)
 
 class SampleClient implements SampleAPI.SampleAPIListener {
 
@@ -51,28 +52,30 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
 
         while (true) {
+
             try {
-                Thread.sleep(1000);
+                //Slow down loop a bit
+                Thread.sleep(1);
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
+                //By looking volatile isThreadReady inSampleAPI, we can synchronize printing to console bit better
             if (client.stateOfThread()) {
                 //  client.setThreadNotReady();
                 while (true) {
-                    System.out.print("Stuck");
                     if (client.getModules().isEmpty()) {
-                        System.out.println("No modules found currently. Reloading every one minute. ??");
-                        //TODO Solve this mysterious bug. No execution here. It Stops right above.
+                        System.out.println("No modules found currently. Reloading every one minute. ");
+                        //TODO There is a bug in IntelliJ console, which causes "\r" not to flush -> Our great timer is not showing up. in case IntelliJ is used.
                         // System.out.print("Stuck");
                         long start = System.currentTimeMillis();
                         while (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(1)) {
-                            System.out.printf("Time left: %d seconds.\r", TimeUnit.MILLISECONDS.toSeconds(TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)));
 
                             try {
+                               // System.out.println("Timer started.");
                                 Thread.sleep(1000);
-
+                                String time  = String.format("Reloading modules in: %d seconds.\r", TimeUnit.MILLISECONDS.toSeconds(TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)));
+                                System.out.print(time);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
@@ -99,26 +102,33 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         case 1: {
                             printModules(client);
                             pressEnter(client);
-                            // client.setThreadReady();
                             break;
                         }
                         case 2: {
                             selectModuleAndShowTargets(reader, client);
                             pressEnter(client);
-                            //  client.setThreadReady();
                             break;
                         }
                         case 3: {
-                            client.setThreadNotReady();
                             AddOrRemoveTrackables(reader, client);
                             pressEnter(client);
-                            //client.setThreadReady();
                             break;
                         }
                         case 4: {
                             runTest(reader, client);
                             pressEnter(client);
-                            client.setThreadReady();
+                            break;
+                        }
+                        case 5: {
+                            try {
+                                System.out.println("Starting syncing..");
+                                client.initToServerState();
+                            } catch (InterruptedException e) {
+                                System.out.println("Something went wrong when reloading...");
+                                e.printStackTrace();
+                            }
+
+                            //client.setThreadReady();
                             break;
                         }
                         default: {
@@ -153,6 +163,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
     }
 
     private void AddOrRemoveTrackables(Scanner reader, SampleAPI client) {
+        System.out.println("Sorry, not implemented yet. Run tests.");
 
 
     }
@@ -171,8 +182,6 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             if (selectedModule == module.getId()) {
                 for (SampleAPI.Module.ModuleTarget target : module.getModuleTargets()) {
                     if (target.getName().equals(ExtraInfo)) {
-                        //if target exists
-                        System.out.println(trackablesToAdd);
                         target.storeTempAddables(trackablesToAdd);
                         target.storeTempRemovables(trackablesToremove);
                         target.newChanges();
@@ -248,7 +257,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         System.out.println("\n---List of Targets--");
                         for (SampleAPI.Module.ModuleTarget target : targets) {
                             System.out.printf("Name: %s\n", target.getName());
-                            System.out.print("Targets: %s");
+                            System.out.print("Trackables: ");
                             for (String trackable : target.getTrackables()) {
                                 System.out.print(trackable + ", ");
                             }
@@ -275,6 +284,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         System.out.println("Press 2. to select module and check your targets.");
         System.out.println("Press 3. to add or remove trackable objects from specified target on speficied model.");
         System.out.println("Press 4. to run test sample.");
+        System.out.println("Press 5. to manually syncronize with server.");
     }
 
     public void notify(String data) {

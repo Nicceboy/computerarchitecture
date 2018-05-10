@@ -171,7 +171,7 @@ public class SampleAPI extends Thread {
                     }
 
                 } else {
-                    System.out.println("Nothing left in trackables.");
+                    SampleAPI.this.instance.notify("Nothing left in trackables.");
                 }
 
             }
@@ -309,7 +309,11 @@ public class SampleAPI extends Thread {
                                 messageByte[1] = istream.readByte();
                                 ByteBuffer byteBuffer = ByteBuffer.wrap(messageByte, 0, 2);
                                 int bytesToRead = byteBuffer.getShort();
-                                this.instance.notify("Read " + bytesToRead + " bytes");
+
+                                //With stringbuilder we can collect all things to notify for one call
+                                StringBuilder notifyMessage = new StringBuilder();
+                                notifyMessage.append(String.format("Read %s bytes\n", bytesToRead));
+
                                 // If there are bytes to read, start reading.
                                 if (bytesToRead > 0) {
                                     int bytesRead = 0;
@@ -320,80 +324,44 @@ public class SampleAPI extends Thread {
                                         bytesRead++;
                                     }
                                     if (bytesRead == bytesToRead) {
+
                                         // Convert bytes to String, remembering that data is sent & received as UTF-16.
                                         String data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
-                                        this.instance.notify("\n\n---- Data received ---");
+                                        notifyMessage.append("\n---- Data received ---\n");
                                         JSONObject root;
-                                        // Parse the string to JSON object.
 
+                                        // Parse the string to JSON object.
                                         root = (JSONObject) new JSONParser().parse(data);
+
                                         int response = Integer.parseInt(root.get("ResponseType").toString()); // request/response
                                         String addinfo = (String) root.get("AdditionalInfo");
                                         JSONArray moduleList = (JSONArray) root.get("ModuleList");
-                                        this.instance.notify("ResponseType: " + response);
-                                        this.instance.notify("Additional info: " + addinfo);
+
+                                        notifyMessage.append(String.format("ResponseType: %s\n" ,response));
+                                        notifyMessage.append(String.format("Additional info: %s\n" ,addinfo));
+
+                                        if(response == 1 ){
+                                            this.instance.notify(notifyMessage.toString());
+                                            setThreadReady();
+                                        }
 
 
                                         //Loop through modules, what server gave us. Enable new ones, if there are any
                                         //Get list of all trackables to this api in all modules and all targets in those modules
                                         if (response == 2) {
-                                            System.out.println("\n---List of modules, what server is supporting---");
+
                                             if (moduleList.isEmpty()){
-                                                this.instance.notify("Server is not currently supporting any modules...");
+                                                notifyMessage.append("Server is not currently supporting any modules...\n");
+                                                this.instance.notify(notifyMessage.toString());
+                                                setThreadReady();
+                                            }else {
+                                                notifyMessage.append("\n---List of modules, what server is supporting---\n");
+                                                parseModules(moduleList, notifyMessage);
+                                                this.instance.notify(notifyMessage.toString());
                                                 setThreadReady();
                                             }
-                                            for (Object module : moduleList) {
 
 
-                                                JSONObject mod = (JSONObject) module;
-                                                String moduleName = (String) mod.get("ModuleName");
-                                                String moduleDesc = (String) mod.get("ModuleDesc");
-                                                String moduleUsage = (String) mod.get("ModuleUsage");
-
-
-                                                boolean addnew = true;
-                                                for (Module OneModule : this.availableModules) {
-                                                    if (OneModule.getModuleName().equals(moduleName)) {
-                                                        System.out.printf("Module %s already exists.\n", moduleName);
-                                                        addnew = false;
-                                                        break;
-                                                    }
-                                                }
-
-                                                if (addnew) {
-                                                    //Create new module if it does not exist
-                                                    this.moduleIds += 1;
-                                                    this.availableModules.add(new Module(moduleName, moduleDesc, moduleUsage, this.moduleIds));
-                                                }
-
-                                                this.instance.notify("Module name: " + moduleName);
-                                                this.instance.notify("Module id: " + this.moduleIds);
-                                                this.instance.notify("Module description: " + moduleDesc);
-                                                //Next let's see trackables per target from module
-
-
-                                                JSONArray watchList = (JSONArray) mod.get("WatchList");
-
-                                                for (Object watch : watchList) {
-
-                                                    List<String> currentTrackables = new ArrayList<>();
-
-                                                    JSONObject watchItem = (JSONObject) watch;
-
-                                                    String moduleTarget = (String) watchItem.get("ModuleTarget");
-                                                    for (Object trackable_o : (JSONArray) watchItem.get("Trackables")) {
-                                                        JSONObject trackable = (JSONObject) trackable_o;
-                                                        currentTrackables.add(trackable.toString());
-                                                    }
-                                                    //Import trackables to module
-                                                    //Let's suppose, that server is always correct. We replace lists based on what it gives.
-                                                    replaceTrackableDataToTargetInModule(moduleName, moduleTarget, currentTrackables);
-
-                                                }
-                                                setThreadReady();
-
-
-                                            }
                                         }
 
                                         if (response == 3) {
@@ -461,6 +429,7 @@ public class SampleAPI extends Thread {
     }
 
     public enum sendPurpose {
+        //Typing command numbers to Server for something easier to understand
         AddOrRemoveTracks(1), init(2);
         private final int id;
 
@@ -473,11 +442,69 @@ public class SampleAPI extends Thread {
         }
     }
 
+    private void parseModules(JSONArray moduleList, StringBuilder notifyMessage){
+
+        for (Object module : moduleList) {
+
+
+            JSONObject mod = (JSONObject) module;
+            String moduleName = (String) mod.get("ModuleName");
+            String moduleDesc = (String) mod.get("ModuleDesc");
+            String moduleUsage = (String) mod.get("ModuleUsage");
+
+
+            boolean addnew = true;
+            for (Module OneModule : this.availableModules) {
+                if (OneModule.getModuleName().equals(moduleName)) {
+                    addnew = false;
+                    break;
+                }
+            }
+
+            if (addnew) {
+                //Create new module if it does not exist
+                this.moduleIds += 1;
+                this.availableModules.add(new Module(moduleName, moduleDesc, moduleUsage, this.moduleIds));
+            }
+
+            notifyMessage.append(String.format("Module name: %s\n", moduleName));
+            notifyMessage.append(String.format("Module id: %d\n", this.moduleIds));
+            notifyMessage.append(String.format("Module description: %s\n", moduleDesc));
+
+            //Next let's see trackables per target from module
+
+
+            JSONArray watchList = (JSONArray) mod.get("WatchList");
+
+            for (Object watch : watchList) {
+
+                List<String> currentTrackables = new ArrayList<>();
+
+                JSONObject watchItem = (JSONObject) watch;
+
+                String moduleTarget = (String) watchItem.get("ModuleTarget");
+                for (Object trackable_o : (JSONArray) watchItem.get("Trackables")) {
+                    String trackable = (String) trackable_o;
+                    currentTrackables.add(trackable);
+                }
+                //Import trackables to module
+                //Let's suppose, that server is always correct. We replace lists based on what it gives.
+                replaceTrackableDataToTargetInModule(moduleName, moduleTarget, currentTrackables);
+
+            }
+            setThreadReady();
+
+
+        }
+    }
+    //Starts process of adding/removing selected trackables on selected targets on selected modules on Server
     public void commitChanges() throws InterruptedException {
+        setThreadNotReady();
         sendListeningMsg(AddOrRemoveTracks);
     }
-
+    //Reset client to state of server
     public void initToServerState() throws InterruptedException {
+        setThreadNotReady();
         sendListeningMsg(init);
     }
 
@@ -499,17 +526,17 @@ public class SampleAPI extends Thread {
         boolean anyChanges = false;
         //Check all modules for changes
         for (Module module : this.availableModules) {
+
             JSONArray temp_list_addables = new JSONArray();
             JSONArray temp_list_removables = new JSONArray();
             JSONArray temp_TrackTargetPairs = new JSONArray();
             JSONObject temp_ModuleObj = new JSONObject();
             JSONObject temp_TargetObj = new JSONObject();
-            // Looping through modules
+
             for (Module.ModuleTarget target : module.getModuleTargets()) {
                 //Looping through targets
 
                 if (target.isThereChanges()) {
-                    this.instance.notify("hmm" + target);
                     toAdd = target.getTempAddables();
                     toRemove = target.getTempRemovables();
                     temp_list_addables.addAll(toAdd);
@@ -518,6 +545,7 @@ public class SampleAPI extends Thread {
                     temp_TargetObj.put("TrackablesToRemove", temp_list_removables);
                     temp_TargetObj.put("ExtraInfo", target.getName());
                     temp_TrackTargetPairs.add(temp_TargetObj);
+                    //resetStatus applies changes to target
                     target.resetStatus();
                     anyChanges = true;
                 }
@@ -551,6 +579,10 @@ public class SampleAPI extends Thread {
 
         if (state == ClientState.EConnected) {
             sendQueue.put(createResponse(purpose).toJSONString());
+        }else{
+            this.instance.notify("Unable to send data. Connection lost,\n");
+            detach();
+            System.exit(0);
         }
 
     }

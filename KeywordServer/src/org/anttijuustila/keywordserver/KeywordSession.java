@@ -77,52 +77,60 @@ public class KeywordSession extends Thread implements Observer {
                             int command =  Integer.parseInt(mainJsonObj.get("Command").toString());
 
                             if (command == 1) {
+                            List<Map<String, List<KeywordPlugin.KeywordTrackable>>> modules = new ArrayList<>();
+
                             JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
 
                                 for (Object pairObj : wordsForModule) {
 
-                                    List<String> trackablesToAdd = new ArrayList<>();
-                                    List<String> trackablesToRemove = new ArrayList<>();
-                                    List<Map<String, String>> modules = new ArrayList<>();
 
-                                    JSONObject trackableAndModule = (JSONObject) pairObj;
 
-                                    if (trackableAndModule.containsKey("TrackablesToAdd")) {
-                                        for (Object trackableAdd : (JSONArray) trackableAndModule.get("TrackablesToAdd")) {
-                                            JSONObject trackable = (JSONObject) trackableAdd;
-                                            trackablesToAdd.add(trackable.toString());
+
+                                    JSONObject ModuleAndTargets = (JSONObject) pairObj;
+                                    JSONArray targets;
+
+                                    if (ModuleAndTargets.containsKey("TrackableAndTargetPair")){
+                                        targets = (JSONArray)ModuleAndTargets.get("TrackableAndTargetPair");
+                                        for (Object target_o : targets){
+                                            JSONObject target = (JSONObject) target_o;
+
+                                            List<String> trackablesToAdd = new ArrayList<>();
+                                            List<String> trackablesToRemove = new ArrayList<>();
+
+                                            if (target.containsKey("TrackablesToAdd")) {
+                                                for (Object trackableAdd : (JSONArray) target.get("TrackablesToAdd")) {
+                                                    String trackable = (String) trackableAdd;
+                                                    trackablesToAdd.add(trackable);
+                                                }
+                                            }
+
+                                            if (target.containsKey("TrackablesToRemove")) {
+                                                for (Object trackableRemove : (JSONArray) target.get("TrackablesToRemove")) {
+                                                    String trackable = (String) trackableRemove;
+                                                    trackablesToRemove.add(trackable);
+                                                }
+                                            }
+
+
+                                            if (trackablesToAdd.size() > 0) {
+
+                                                    KeywordPlugin kp = plugins.get(ModuleAndTargets.get("ModuleName").toString());
+                                                    kp.addTrackables(trackablesToAdd, target.get("ExtraInfo").toString(), this);
+
+                                            }
+
+                                            if (trackablesToRemove.size() > 0) {
+
+                                                    KeywordPlugin kp = plugins.get(ModuleAndTargets.get("ModuleName").toString());
+                                                    kp.removeTrackables(trackablesToRemove, target.get("ExtraInfo").toString(), this);
+
+                                            }
+
                                         }
                                     }
+                                    System.out.println(sessionId + ": Changes updated. Sending confirmation. ");
+                                    sendResponse(createChangeSucceedResponse().toJSONString());
 
-                                    if (trackableAndModule.containsKey("TrackablesToRemove")) {
-                                        for (Object trackableRemove : (JSONArray) trackableAndModule.get("TrackablesToRemove")) {
-                                            JSONObject trackable = (JSONObject) trackableRemove;
-                                            trackablesToRemove.add(trackable.toString());
-                                        }
-                                    }
-
-                                    for (Object moduleObj : (JSONArray) trackableAndModule.get("Modules")) {
-                                        JSONObject module = (JSONObject) moduleObj;
-                                        Map<String, String> tempMap = new HashMap<>();
-
-                                        tempMap.put("ModuleName", module.get("ModuleName").toString());
-                                        tempMap.put("ExtraInfo", module.get("ExtraInfo").toString());
-                                        modules.add(tempMap);
-                                    }
-
-                                    if (trackablesToAdd.size() > 0) {
-                                        for (Map<String, String> module : modules) {
-                                            KeywordPlugin kp = plugins.get(module.get("ModuleName"));
-                                            kp.addTrackables(trackablesToAdd, module.get("ExtraInfo"), this);
-                                        }
-                                    }
-
-                                    if (trackablesToRemove.size() > 0) {
-                                        for (Map<String, String> module : modules) {
-                                            KeywordPlugin kp = plugins.get(module.get("ModuleName"));
-                                            kp.removeTrackables(trackablesToRemove, module.get("ExtraInfo"), this);
-                                        }
-                                    }
                                 }
                             }
                             if (command ==2) {
@@ -239,7 +247,7 @@ public class KeywordSession extends Thread implements Observer {
     private JSONObject createChangeSucceedResponse() {
         JSONObject toSend = new JSONObject();
         toSend.put("ResponseType", 1);
-        toSend.put("AdditionalInfo", "Change succeed");
+        toSend.put("AdditionalInfo", "Changes on trackables succeed.");
 
         toSend.put("ModuleList", this.createModuleList());
 
