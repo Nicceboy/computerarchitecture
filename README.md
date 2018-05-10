@@ -3,10 +3,10 @@
 
 **Client to server Json:**
 
-## Current:
+~~# Current:
 ### Problems: 
 * Trackables might not be similar, like words for example. Because of this, can't really combine modules
-* Additionally it goes messy, if we have to put same words with other module with same words, and the rest of the words (those which are not same with some module) should be put on another object
+* Additionally it goes messy, if we have to put same words with other module with same words, and the rest of the words (those which are not same with some module) should be put on another object~~
 
 ```javascript
 {
@@ -39,7 +39,8 @@
 	]
 }
 ```
-## Probably better alternative would be
+
+## ~~Probably better alternative would be~~ Current version
 * Number of WordsForModule object lists is amount of modules
 * Each module has own list of targets, clear individual trackables
 
