@@ -3,10 +3,10 @@
 
 **Client to server Json:**
 
-~~Current:
-### Problems: 
-* Trackables might not be similar, like words for example. Because of this, can't really combine modules
-* Additionally it goes messy, if we have to put same words with other module with same words, and the rest of the words (those which are not same with some module) should be put on another object~~
+~~# Current:~~
+~~### Problems: ~~
+~~* Trackables might not be similar, like words for example. Because of this, can't really combine modules~~
+~~* Additionally it goes messy, if we have to put same words with other module with same words, and the rest of the words (those which are not same with some module) should be put on another object~~
 
 ```javascript
 {
