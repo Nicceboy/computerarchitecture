@@ -21,7 +21,8 @@ public class KeywordServer extends Thread implements SessionManager {
     private static boolean running = true;
     private static ServerSocket socket = null;
 
-    private static Map<String, KeywordPlugin> plugins = new HashMap<>();
+  //  private static Map<String, KeywordPlugin> plugins = new HashMap<>();
+    private static Map<String, Class> plugins = new HashMap<>();
     private static Vector<KeywordSession> sessions = null;
 
     public static void main(String[] args) {
@@ -125,7 +126,7 @@ public class KeywordServer extends Thread implements SessionManager {
                             if (anIntf.getSimpleName().equalsIgnoreCase("KeywordPlugin")) {
                                 KeywordPlugin kp = (KeywordPlugin) c.newInstance();
                                 System.out.println(kp.getPluginName() + " loaded successfully.");
-                                plugins.put(kp.getPluginName(), kp);
+                                plugins.put(kp.getPluginName(), c);
                             }
                         }
 

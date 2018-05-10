@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
-public interface KeywordPlugin {
+public interface KeywordPlugin extends Runnable {
     void startPlugin() throws FailedToDoPluginThing;
 
     String getPluginName();
