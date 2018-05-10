@@ -23,11 +23,14 @@ import org.keyword.plugin.KeywordPlugin;
 public class KeywordSession extends Thread implements Observer {
 
     private Socket socket = null;
-    private static Map<String, KeywordPlugin> plugins;
+    private static Map<String, Class> plugins;
     private List<String> keywords = null;
     private DataOutputStream out = null;
     private SessionManager manager = null;
     private int sessionId = 0;
+
+  //  private static Vector<KeywordPlugin> runningPlugins = null;
+    private static Map<String, KeywordPlugin> runningPlugins = new HashMap<>();;
 
     KeywordSession(Socket s, SessionManager mgr, int session) {
         socket = s;
@@ -36,15 +39,37 @@ public class KeywordSession extends Thread implements Observer {
         sessionId = session;
     }
 
-    static void setPlugins(Map<String, KeywordPlugin> plugins) {
+    static void setPlugins(Map<String, Class> plugins) {
         KeywordSession.plugins = plugins;
     }
 
     public void run() {
+
         String data = "";
         String dir = "";
-
+       // runningPlugins = new Vector<KeywordPlugin>();
         try {
+            for (String code : plugins.keySet()) {
+
+                //We have to start each plugin in separate thread to ensure that they will work smoothly
+                try {
+                    KeywordPlugin r = (KeywordPlugin) plugins.get(code).newInstance();
+                    Thread pluginThread = new Thread(r);
+                    pluginThread.start();
+                    r.startPlugin();
+                    runningPlugins.put(code, r);
+
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (KeywordPlugin.FailedToDoPluginThing failed) {
+                    failed.printStackTrace();
+                    createErrorResponse(String.format("Looks like there was problem with plugin %s. It's disabled now.", code));
+                }
+
+            }
+
             DataInputStream inStream = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
@@ -77,7 +102,6 @@ public class KeywordSession extends Thread implements Observer {
                             int command =  Integer.parseInt(mainJsonObj.get("Command").toString());
 
                             if (command == 1) {
-                            List<Map<String, List<KeywordPlugin.KeywordTrackable>>> modules = new ArrayList<>();
 
                             JSONArray wordsForModule = (JSONArray) mainJsonObj.get("WordsForModule");
 
@@ -114,14 +138,14 @@ public class KeywordSession extends Thread implements Observer {
 
                                             if (trackablesToAdd.size() > 0) {
 
-                                                    KeywordPlugin kp = plugins.get(ModuleAndTargets.get("ModuleName").toString());
+                                                    KeywordPlugin kp = runningPlugins.get(ModuleAndTargets.get("ModuleName").toString());
                                                     kp.addTrackables(trackablesToAdd, target.get("ExtraInfo").toString(), this);
 
                                             }
 
                                             if (trackablesToRemove.size() > 0) {
 
-                                                    KeywordPlugin kp = plugins.get(ModuleAndTargets.get("ModuleName").toString());
+                                                    KeywordPlugin kp = runningPlugins.get(ModuleAndTargets.get("ModuleName").toString());
                                                     kp.removeTrackables(trackablesToRemove, target.get("ExtraInfo").toString(), this);
 
                                             }
@@ -141,9 +165,9 @@ public class KeywordSession extends Thread implements Observer {
                     }
                 } catch (ParseException e) {
                     e.printStackTrace();
-                } catch (KeywordPlugin.FailedToDoPluginThing e) {
-//					JSONObject toSend = createResponse("response", "Path does not exist", dir);
-//					sendResponse(toSend.toString());
+                } catch (KeywordPlugin.FailedToDoPluginThing failed) {
+					JSONObject toSend = createErrorResponse(failed.toString());
+					sendResponse(toSend.toString());
                 }catch (SocketException e){
                     System.out.println(sessionId + ": Session connection reseted. Closing..");
                     manager.removeSession(this);
@@ -162,6 +186,9 @@ public class KeywordSession extends Thread implements Observer {
             // Remove from Server, since connection was broken.
             manager.removeSession(this);
         }
+//        catch (KeywordPlugin.FailedToDoPluginThing failed) {
+//            failed.printStackTrace();
+//        }
 
         try {
             socket.close();
@@ -204,7 +231,7 @@ public class KeywordSession extends Thread implements Observer {
     private JSONArray createModuleList() {
         JSONArray finalModuleList = new JSONArray();
 
-        for (KeywordPlugin plugin : plugins.values()) {
+        for (KeywordPlugin plugin : runningPlugins.values()) {
             JSONObject module = new JSONObject();
             JSONArray watchList = new JSONArray();
 
@@ -259,6 +286,14 @@ public class KeywordSession extends Thread implements Observer {
 
         return toSend;
     }
+    @SuppressWarnings("unchecked")
+    private JSONObject createErrorResponse(String reason) {
+        JSONObject toSend = new JSONObject();
+        toSend.put("ResponseType", 4);
+        toSend.put("AdditionalInfo", reason);
+
+        return toSend;
+    }
 
     @SuppressWarnings("unchecked")
     private JSONObject createDetailedWatchListResponse() {
@@ -281,7 +316,7 @@ public class KeywordSession extends Thread implements Observer {
 
         JSONObject notificationContent = new JSONObject();
         notificationContent.put("ModuleName", notifyObject.getModuleName());
-        notificationContent.put("ModuleTarget", notifyObject.getTrackablesFound());
+        notificationContent.put("ModuleTarget", notifyObject.getModuleExtraInfo());
         notificationContent.put("Trackables", notifyObject.getTrackablesFound());
 
         toSend.put("NotificationContent", notificationContent);

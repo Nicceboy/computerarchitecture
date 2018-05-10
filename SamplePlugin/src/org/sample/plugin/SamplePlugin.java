@@ -2,23 +2,24 @@ package org.sample.plugin;
 
 
 
-
 import org.keyword.plugin.KeywordPlugin;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SamplePlugin extends Thread implements KeywordPlugin {
+public class SamplePlugin implements KeywordPlugin {
     private final String name = "SamplePlugin";
     private final String desc = "This plugin is just for testing purposes.";
     private final String usage = "You can use this plugin to test program.";
 
     private List<KeywordTrackable> trackables = new ArrayList<>();
 
+    @Override
     public void startPlugin() {
-
-
+   // this.start();
+//        currentThread().start();
+        System.out.println("Sample Plugin started\n");
     }
     class observableThing extends Observable{
         private String happening;
@@ -36,16 +37,17 @@ public class SamplePlugin extends Thread implements KeywordPlugin {
 
     @Override
     public void run() {
-        super.run();
-        Timer timer = new Timer();
+//        super.run();
 
         while (true) {
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    System.out.println("Hello world!\n");
-                }
-            }, 60*1000); //One minute timer
+            try {
+                Thread.sleep(60*1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Hello world!\n");
+
+
         }
     }
 

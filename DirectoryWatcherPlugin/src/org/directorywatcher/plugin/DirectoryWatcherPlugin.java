@@ -17,24 +17,39 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 // https://stackoverflow.com/questions/29827718/searching-and-counting-a-specific-word-in-a-text-file-java
 // https://docs.oracle.com/javase/tutorial/essential/io/notification.html
 
-public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
+public class DirectoryWatcherPlugin implements KeywordPlugin {
 
-    enum Event { ECreated, EModified }
+    //Plugin for KeywordServer to follow directories and find changes in files
 
-    private WatchService watcher = null;
-    private final Map<WatchKey,PathObservable> keys;
-    private boolean trace = true;
-    private boolean running = false;
+    //It must implement two classes of KeywordPlugin interface
+    private final Map<WatchKey, DirKeywordTrackable.PathObservable> keys;
+
+
     private final String name = "DirectoryWatcher Plugin";
     private final String desc = "You can watch for words you want in filepath selected by you.";
     private final String usage = "You must specify filepath as 'target' and keywords as 'trackables'. Filepath should be exactly in correct format. " +
             "Additionally if you want to track directories recursively, after target, add ',' and word 'recursive'. For example 'C:\\Mydir, recursive'";
-
+    public AtomicBoolean isStopped = new AtomicBoolean(false);
+    private WatchService watcher = null;
+    private boolean running = false;
     private List<KeywordPlugin.KeywordTrackable> trackables = new ArrayList<>();
+
+    //DirectoryWatcher plugin methods
+    public DirectoryWatcherPlugin() throws IOException {
+        watcher = FileSystems.getDefault().newWatchService();
+        keys = new HashMap<WatchKey, DirKeywordTrackable.PathObservable>();
+    }
+
+
+    @SuppressWarnings("unchecked")
+    static <T> WatchEvent<T> cast(WatchEvent<?> event) {
+        return (WatchEvent<T>) event;
+    }
 
     public String getPluginName() {
         return this.name;
@@ -54,36 +69,28 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
     }
 
     @Override
-    public void startPlugin() {
-
-
-        try {
-            super.run();
-            running = true;
-            System.out.println("DirWatcher starting to process.");
-            while (running) {
-                processEvents();
-            }
-        }
-        catch (FailedToDoPluginThing failed){
-            System.out.println(failed);
-        }
+    public void startPlugin() throws FailedToDoPluginThing {
+        System.out.println("DirWatcher starting to process.");
     }
 
-//    @Override
-//    public void run(){
+    @Override
+    public void run() {
 //        super.run();
-//        running = true;
-//        System.out.println("DirWatcher starting to process.");
-//        while (running) {
-//            processEvents();
-//        }
-//    }
+        running = true;
+        while (running) {
+            try {
+                processEvents();
+            } catch (FailedToDoPluginThing failed) {
+                failed.printStackTrace();
+            }
+        }
+    }
 
     public void quit() {
         System.out.println("DirWatcher quitting...");
         running = false;
-        this.interrupt();
+        //Way to stop thread, when it's implementing Runnable
+        this.isStopped.set(false);
         try {
             System.out.println("Closing the watcher...");
             watcher.close();
@@ -92,56 +99,14 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
         }
     }
 
-
-    public class PathObservable extends Observable {
-        public Path path = null;
-        public boolean recursive = false;
-        public PathObservable(Path p, boolean rec, Observer o) {
-            super();
-            path = p;
-            recursive = rec;
-            addObserver(o);
-        }
-        public void setDirty() {
-            setChanged();
-        }
-    }
-
-
-    @SuppressWarnings("unchecked")
-    static <T> WatchEvent<T> cast(WatchEvent<?> event) {
-        return (WatchEvent<T>)event;
-    }
-
-    /**
-     * Creates a WatchService and registers the given directory
-     */
-    public DirectoryWatcherPlugin() throws IOException {
-        watcher = FileSystems.getDefault().newWatchService();
-        keys = new HashMap<WatchKey,PathObservable>();
-    }
     //Add watched directories
-    public void addTrackables(List<String> keywords, String dir, Observer o)  {
+    public void addTrackables(List<String> keywords, String dir, Observer o) throws FailedToDoPluginThing {
 
-        Path newPath = FileSystems.getDefault().getPath(dir);
-        try {
-            register(newPath, o);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-      //  new KeywordTrackable()
+        KeywordTrackable newTargetDir = new DirKeywordTrackable(keywords, dir, o, watcher, keys, this);
 
 
-//        if (recursive) {
-//            System.out.format("Scanning %s ...\n", dir);
-//            registerAll(dir, o);
-//            System.out.println("Done.");
-//        } else {
-//            register(dir, o);
-//        }
-        // enable trace after initial registration
-        this.trace = true;
     }
+
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
 
     }
@@ -150,80 +115,25 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
 
     }
 
- //   public void removeWatchedDirectories(Observer o) {
-//        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
-//        for (Map.Entry<WatchKey,PathObservable> entry : keys.entrySet())
-//        {
-//            PathObservable current = entry.getValue();
-//            current.deleteObserver(o);
-//            if (current.countObservers() == 0) {
-//                entry.getKey().cancel();
-//                itemsToRemove.add(entry.getKey());
-//            }
-//        }
-//        keys.entrySet().removeAll(itemsToRemove);
-  //  }
-
-
-    void register(Path dir, Observer o) throws IOException {
-        System.out.println("Registering a path " + dir.toString());
-        WatchKey key = dir.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
-        PathObservable pwo = null;
-        if (trace) {
-            pwo = keys.get(key);
-            if (null != pwo) {
-                pwo.addObserver(o);
-                Path prev = keys.get(key).path;
-                if (prev == null) {
-                    System.out.format("register: %s\n", dir);
-                } else {
-                    if (!dir.equals(prev)) {
-                        System.out.format("update: %s -> %s\n", prev, dir);
-                    }
-                }
-            } else {
-                pwo = new PathObservable(dir, false, o);
-            }
-        }
-        keys.put(key, pwo);
-    }
-
-    /**
-     * Register the given directory, and all its sub-directories, with the
-     * WatchService.
-     */
-  //  private void registerAll(final Path start, Observer o) throws IOException {
-        // register directory and sub-directories
-//        System.out.println("Registering a path with subdirs " + start.toString());
-//        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
-//            @Override
-//            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-//                    throws IOException
-//            {
-//                register(dir, o);
-//                return FileVisitResult.CONTINUE;
-//            }
-//        });
-   // }
-
     /**
      * Process all events for keys queued to the watcher
      */
-    void processEvents() throws FailedToDoPluginThing{
+    void processEvents() throws FailedToDoPluginThing {
         // wait for key to be signaled
+        System.out.println("DirectoryWatcher running...");
         WatchKey key = null;
         try {
             key = watcher.take();
 
             if (key != null) {
-                Path dir = keys.get(key).path;
+                Path dir = keys.get(key).getPath();
                 if (dir == null) {
                     System.err.println("WatchKey not recognized!!");
                     return;
                 }
-                boolean recursive = keys.get(key).recursive;
+                boolean recursive = keys.get(key).isRecursive();
 
-                for (WatchEvent<?> event: key.pollEvents()) {
+                for (WatchEvent<?> event : key.pollEvents()) {
                     Kind<?> kind = event.kind();
 
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
@@ -239,9 +149,11 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
                             && !Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                         keys.get(key).setDirty();
                         keys.get(key).notifyObservers(new DirectoryEvent(Event.ECreated, child.toString()));
+                        System.out.println("Ha, entry found : child.toString()");
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                         keys.get(key).setDirty();
                         keys.get(key).notifyObservers(new DirectoryEvent(Event.EModified, child.toString()));
+                        System.out.println("Ha, entry found : child.toString()");
                     }
 
                     // if directory is created, and watching recursively, then
@@ -274,41 +186,48 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
             running = false;
             throw new FailedToDoPluginThing(String.format("Error occured in plugin %s. Service closing...\n", getPluginName()));
         }
-        }
-    public class KeywordTrackable implements KeywordPlugin.KeywordTrackable{
-
-        private List<String> trackables = new ArrayList<String>();
-        private String extraInfo;
-
-        public List<String> getTrackables(){
-            return trackables;
-        }
-
-        public String getExtraInfo(){
-            return extraInfo;
-        }
-
-
-        public boolean addTrackable(String newTrack){
-            return true;
-        }
-        public boolean removeTrackable(String trackToRemove){
-            return true;
-        }
     }
 
-    public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject{
+    //DirectoryWatcherPlugin variables
+    enum Event {
+        ECreated, EModified
+    }
 
+
+
+    //   public void removeWatchedDirectories(Observer o) {
+//        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
+//        for (Map.Entry<WatchKey,PathObservable> entry : keys.entrySet())
+//        {
+//            PathObservable current = entry.getValue();
+//            current.deleteObserver(o);
+//            if (current.countObservers() == 0) {
+//                entry.getKey().cancel();
+//                itemsToRemove.add(entry.getKey());
+//            }
+//        }
+//        keys.entrySet().removeAll(itemsToRemove);
+    //  }
+
+
+    /**
+     * Register the given directory, and all its sub-directories, with the
+     * WatchService.
+     */
+
+    public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject {
 
 
         Event event;
         String fileName;
+
         DirectoryEvent(Event e, String file) {
             super();
             event = e;
             fileName = file;
         }
-        public String getModuleName(){
+
+        public String getModuleName() {
             return DirectoryWatcherPlugin.this.getPluginName();
         }
 
@@ -316,8 +235,8 @@ public class DirectoryWatcherPlugin extends Thread implements KeywordPlugin {
             return "test";
         }
 
-        public List<String> getTrackablesFound(){
-            String [] array = {"Found This", "And this."};
+        public List<String> getTrackablesFound() {
+            String[] array = {"Found This", "And this."};
             return Arrays.asList(array);
         }
     }
