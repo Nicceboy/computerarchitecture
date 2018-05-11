@@ -31,8 +31,12 @@ class DirectoryObject extends Observable implements KeywordPlugin.KeywordTrackab
         this.trackables = keywords;
         //Contains all data from client
         this.dir = dir;
+        try{
         if ("recursive".equals(dir.split(",")[1].replaceAll("\\s+", ""))) {
             this.recursive = true;
+        }}catch (ArrayIndexOutOfBoundsException e){
+            //Not recursive path
+            this.recursive =false;
         }
         this.observer = o;
         this.path = FileSystems.getDefault().getPath(dir.split(",")[0]);

@@ -478,6 +478,7 @@ public class SampleAPI extends Thread {
             JSONObject temp_TargetObj = new JSONObject();
 
             for (Module.ModuleTarget target : module.getModuleTargets()) {
+                assert false;
                 //Looping through targets
 
                 if (target.isThereChanges()) {
@@ -591,8 +592,9 @@ public class SampleAPI extends Thread {
         public void addTarget(ModuleTarget target) {
             moduleTargets.add(target);
         }
+        public void addTarget(String targetName){moduleTargets.add(new ModuleTarget(targetName));}
 
-        void addTarget(String target, List<String> trackables) {
+        public void addTarget(String target, List<String> trackables) {
 
             ModuleTarget tmp = new ModuleTarget(target);
             tmp.addTrackables(trackables);
