@@ -3,19 +3,9 @@ package org.directorywatcher.plugin;
 import org.keyword.plugin.KeywordPlugin;
 
 import java.io.IOException;
-import java.nio.file.ClosedWatchServiceException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
+import java.nio.file.*;
 import java.nio.file.WatchEvent.Kind;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,23 +16,23 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
     //Plugin for KeywordServer to follow directories and find changes in files
 
-    //It must implement two classes of KeywordPlugin interface
-    private final Map<WatchKey, DirKeywordTrackable.PathObservable> keys;
 
-
+    private final Map<WatchKey, DirectoryObject> keys;
     private final String name = "DirectoryWatcher Plugin";
     private final String desc = "You can watch for words you want in filepath selected by you.";
     private final String usage = "You must specify filepath as 'target' and keywords as 'trackables'. Filepath should be exactly in correct format. " +
             "Additionally if you want to track directories recursively, after target, add ',' and word 'recursive'. For example 'C:\\Mydir, recursive'";
+    //Atomic needed to stop thread manually from inside
     public AtomicBoolean isStopped = new AtomicBoolean(false);
+    private boolean trace = true;
     private WatchService watcher = null;
     private boolean running = false;
-    private List<KeywordPlugin.KeywordTrackable> trackables = new ArrayList<>();
+
 
     //DirectoryWatcher plugin methods
     public DirectoryWatcherPlugin() throws IOException {
         watcher = FileSystems.getDefault().newWatchService();
-        keys = new HashMap<WatchKey, DirKeywordTrackable.PathObservable>();
+        keys = new HashMap<WatchKey, DirectoryObject>();
     }
 
 
@@ -51,21 +41,34 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
         return (WatchEvent<T>) event;
     }
 
+    @Override
     public String getPluginName() {
         return this.name;
     }
 
+    @Override
     public String getPluginDesc() {
         return this.desc;
     }
 
+    @Override
     public String getPluginUsage() {
         return this.usage;
     }
 
+    //In this case, we get list of all directories, and what we are tracking on each directory
     public List<KeywordPlugin.KeywordTrackable> getAllTrackables() {
+        List<KeywordPlugin.KeywordTrackable> trackables = new ArrayList<>();
+        //Create proper list from map, which implements our API
+        for (WatchKey trackKey : this.keys.keySet()) {
+            //Let's not add objects which are mapped as recursive objects
+            DirectoryObject temp = this.keys.get(trackKey);
+            if(temp.isMasterPath()) {
+                trackables.add(temp);
 
-        return this.trackables;
+            }
+        }
+        return trackables;
     }
 
     @Override
@@ -100,13 +103,74 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     }
 
     //Add watched directories
+    @Override
     public void addTrackables(List<String> keywords, String dir, Observer o) throws FailedToDoPluginThing {
 
-        KeywordTrackable newTargetDir = new DirKeywordTrackable(keywords, dir, o, watcher, keys, this);
+        for (WatchKey dirKey : this.keys.keySet()) {
+            DirectoryObject temp = this.keys.get(dirKey);
+            //Masterpaths are wanted targets
+            if(temp.isMasterPath()) {
+                if (this.keys.get(dirKey).getExtraInfo().equals(dir)) {
+                    for (String keyword : keywords) {
+                        this.keys.get(dirKey).addTrackable(keyword);
+                    }
+                    return;
+                }
+            }
 
+        }
+        DirectoryObject newTargetDir = new DirectoryObject(keywords, dir, o, this);
+        //Master path mark in case of recursive including
+        newTargetDir.setMasterPath();
+        try {
+
+            if ( newTargetDir.isRecursive()) {
+                System.out.format("Scanning %s ...\n", dir);
+                registerAll(newTargetDir);
+                System.out.println("Done.");
+            } else {
+                register(newTargetDir);
+            }
+        } catch (IOException e) {
+            throw new FailedToDoPluginThing("Incorrect path: " + e);
+        }
 
     }
 
+    private void register(DirectoryObject directoryObject) throws IOException, FailedToDoPluginThing {
+        System.out.println("Registering a path " + directoryObject.getPath().toString());
+        WatchKey key = directoryObject.getPath().register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+
+        if(this.keys.containsKey(key)) {
+            System.out.format("Path registered already : %s\n", directoryObject.getPath().toString());
+            return;}
+        directoryObject.addObserver(directoryObject.getObserver());
+
+        this.keys.put(key, directoryObject);
+    }
+
+    private void registerAll(final DirectoryObject directoryObject) throws IOException, FailedToDoPluginThing {
+        //  register directory and sub-directories
+        //Master path must be registered, new object already created in recursive
+        register(directoryObject);
+        DirectoryWatcherPlugin self = this;
+        System.out.println("Registering a path with subdirs " + directoryObject.getPath().toString());
+        Files.walkFileTree(directoryObject.getPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                    throws IOException {
+
+                try {
+                    register(new DirectoryObject(dir, directoryObject, self));
+                } catch (FailedToDoPluginThing failed) {
+                    throw  new IOException("Something went wrong when adding recursively in path; " + dir.toString());
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    @Override
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
 
     }
@@ -148,11 +212,11 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE
                             && !Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                         keys.get(key).setDirty();
-                        keys.get(key).notifyObservers(new DirectoryEvent(Event.ECreated, child.toString()));
+                        keys.get(key).notifyObservers(new DirectoryEvent(Event.ECreated, child.toString(), this));
                         System.out.println("Ha, entry found : child.toString()");
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                         keys.get(key).setDirty();
-                        keys.get(key).notifyObservers(new DirectoryEvent(Event.EModified, child.toString()));
+                        keys.get(key).notifyObservers(new DirectoryEvent(Event.EModified, child.toString(), this));
                         System.out.println("Ha, entry found : child.toString()");
                     }
 
@@ -194,7 +258,6 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     }
 
 
-
     //   public void removeWatchedDirectories(Observer o) {
 //        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
 //        for (Map.Entry<WatchKey,PathObservable> entry : keys.entrySet())
@@ -214,32 +277,6 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
      * Register the given directory, and all its sub-directories, with the
      * WatchService.
      */
-
-    public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject {
-
-
-        Event event;
-        String fileName;
-
-        DirectoryEvent(Event e, String file) {
-            super();
-            event = e;
-            fileName = file;
-        }
-
-        public String getModuleName() {
-            return DirectoryWatcherPlugin.this.getPluginName();
-        }
-
-        public String getModuleExtraInfo() {
-            return "test";
-        }
-
-        public List<String> getTrackablesFound() {
-            String[] array = {"Found This", "And this."};
-            return Arrays.asList(array);
-        }
-    }
 
 
 }

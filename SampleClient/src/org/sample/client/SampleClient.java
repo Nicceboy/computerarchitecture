@@ -55,7 +55,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
             try {
                 //Slow down loop a bit
-                Thread.sleep(1);
+                Thread.sleep(10);
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -174,7 +174,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         int selectedModule = 1;
         String ExtraInfo = "ContryNews";
         String ExtraInfo2 = "SomeStuff";
-        String ExtraInfo3 = "C:\\Users\\Niklas Saari\\Desktop\\CompArch\\artifacts\\KeywordServer_jar\\plugins";
+        String ExtraInfo3 = "C:\\Users\\Niklas Saari\\Desktop\\CompArch\\artifacts\\KeywordServer_jar\\plugins, recursive";
         String[] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
         String[] testRemovables = {"Heippa", "Vaan"};
         ArrayList<String> trackablesToAdd = new ArrayList<String>(Arrays.asList(testAddables));

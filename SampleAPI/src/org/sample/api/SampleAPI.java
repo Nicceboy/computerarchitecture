@@ -68,15 +68,21 @@ public class SampleAPI extends Thread {
         public List<ModuleTarget> getModuleTargets() {
             return this.moduleTargets;
         }
-
         public void addTarget(ModuleTarget target) {
             moduleTargets.add(target);
+        }
+
+        void addTarget(String target, List<String> trackables) {
+
+            ModuleTarget tmp = new ModuleTarget(target);
+            tmp.addTrackables(trackables);
+            moduleTargets.add(tmp);
         }
 
         public void removeTarget(ModuleTarget target) {
             this.moduleTargets.removeIf(a -> a.getName().equals(target.getName()));
         }
-        public void removeAllTargets(){
+        void removeAllTargets(){
             this.moduleTargets = new ArrayList<>();
         }
 
@@ -264,8 +270,9 @@ public class SampleAPI extends Thread {
         for (Module module : this.availableModules) {
             if (module.getModuleName().equals(moduleName)) {
                 for (Module.ModuleTarget ttarget : module.getModuleTargets()) {
-                    this.instance.notify("Replacing target" + target + " with " + trackables);
+                //    this.instance.notify("Replacing target" + target + " with " + trackables);
                     if (ttarget.getName().equals(target)) {
+
                         ttarget.replaceTrackables(trackables);
 
 
@@ -406,6 +413,7 @@ public class SampleAPI extends Thread {
                                                 } else {
                                                     notifyMessage.append("\nWe got a notification, but data was invalid... \n");
                                                 }
+                                                setThreadReady();
                                                 break;
 
 
@@ -413,9 +421,11 @@ public class SampleAPI extends Thread {
                                             case 4:{
                                                 notifyMessage.append("\nThere was an error on server side.. \n");
                                                 this.instance.notify(notifyMessage.toString());
+                                                setThreadReady();
                                                 break;
                                             }
                                             default:{
+                                                setThreadReady();
                                                 break;
                                             }
                                         }
@@ -541,19 +551,25 @@ public class SampleAPI extends Thread {
             }
             else {
             boolean RemoveTarget = true;
+            Iterator<Module> avaiModIter = this.availableModules.iterator();
+
+
             //remove all targets which not in new list -> keeps only targets what we get from server
-            for (Module moduleWithWrongTarget : this.availableModules) {
-                if (moduleWithWrongTarget.getModuleName().equals(moduleName)){
-                    for(Module.ModuleTarget target : moduleWithWrongTarget.getModuleTargets()){
+                //have to use iterators because of concurrency problems
+            while (avaiModIter.hasNext()) {
+                if (avaiModIter.next().getModuleName().equals(moduleName)){
+                    Iterator<Module.ModuleTarget> avaiTarget = avaiModIter.next().getModuleTargets().iterator();
+                    while(avaiTarget.hasNext()){
                         for (Object watch : watchList) {
+
                             JSONObject watchItem = (JSONObject) watch;
                             String moduleTarget = (String) watchItem.get("ModuleTarget");
-                            if(target.getName().equals(moduleTarget)){
+                            if(avaiTarget.next().getName().equals(moduleTarget)){
                                 RemoveTarget = false;
                             }
                         }
                         if(RemoveTarget){
-                            moduleWithWrongTarget.removeTarget(target);
+                            avaiTarget.remove();
                         }
 
 
@@ -561,7 +577,9 @@ public class SampleAPI extends Thread {
                 }
 
 
-            }}
+
+            }
+            }
 
             for (Object watch : watchList) {
 
@@ -574,12 +592,25 @@ public class SampleAPI extends Thread {
                     String trackable = (String) trackable_o;
                     currentTrackables.add(trackable);
                 }
+                boolean targetNotExist = false;
+                for (Module tmod  : this.availableModules){
+                if (tmod.getModuleName().equals(moduleName)){
+                    for (Module.ModuleTarget ttarget : tmod.getModuleTargets()){
+                        if (ttarget.getName().equals(moduleTarget)){
+                            replaceTrackableDataToTargetInModule(moduleName, moduleTarget, currentTrackables);
+                            setThreadReady();
+                            return;
+                        }
+                    }
+                    tmod.addTarget(moduleTarget, currentTrackables);
+                }
+                }
                 //Import trackables to module
                 //Let's suppose, that server is always correct. We replace lists based on what it gives.
-                replaceTrackableDataToTargetInModule(moduleName, moduleTarget, currentTrackables);
+
 
             }
-            setThreadReady();
+
 
 
         }
