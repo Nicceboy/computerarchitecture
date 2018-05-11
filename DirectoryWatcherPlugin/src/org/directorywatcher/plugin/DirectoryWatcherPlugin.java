@@ -176,15 +176,17 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     @Override
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
         List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
-        for (Map.Entry<WatchKey,DirectoryObject> entry : keys.entrySet())
-        {
-            if(keys.get(entry).getExtraInfo().equals(extraInfo)){
-                keys.get(entry).removeTrackable(trackables);
+        for (Map.Entry<WatchKey,DirectoryObject> entry : this.keys.entrySet())
+        //
+        {if(keys.get(entry).isMasterPath()) {
+            if (this.keys.get(entry).getExtraInfo().equals(extraInfo)) {
+                this.keys.get(entry).removeTrackable(trackables);
 
-            }  if (keys.get(entry).getTrackables().isEmpty()){
-                    removeTarget(observer);
+            }
+            if (keys.get(entry).getTrackables().isEmpty()) {
+                removeTarget(observer);
+            }
         }
-
         }
 
 
