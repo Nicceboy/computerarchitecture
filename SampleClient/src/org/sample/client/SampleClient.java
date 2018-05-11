@@ -1,4 +1,5 @@
 package org.sample.client;
+import java.lang.reflect.Array;
 import java.util.Scanner;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -115,8 +116,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                             break;
                         }
                         case 3: {
-                            AddOrRemoveTrackables(reader, client);
-                            pressEnter(client);
+                            AddOrRemoveTrackables(client);
                             break;
                         }
                         case 4: {
@@ -166,7 +166,8 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         }
 
     }
-    private int getIntInput(Scanner reader, ArrayList<Integer> range){
+    private int getIntInput(ArrayList<Integer> range){
+        Scanner reader = new Scanner(System.in);
         while (true){
             try {
                 int input = reader.nextInt();
@@ -186,29 +187,46 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
     }
 
-    private void AddOrRemoveTrackables(Scanner reader, SampleAPI client) {
+    private void AddOrRemoveTrackables(SampleAPI client) {
         //TODO
+        ArrayList<Integer> tmp_range = new ArrayList<>();
+        Map<Integer, SampleAPI.Module> IntAndModule = new HashMap<>();
+        Map<Integer, SampleAPI.Module.ModuleTarget> idAndTarget = new HashMap<>();
+        HashMap<Integer, Boolean> YesOrNo = new HashMap<Integer, Boolean>(){{
+            put(1, true);
+            put(2, false);
+        }};
+
+        int temp_input;
         System.out.println("Here you can add or remove trackables. Select Module by giving corresponding ID: ");
         while (true) {
-            try {
-                int input = reader.nextInt();
+
                 List<SampleAPI.Module> modules = client.getModules();
                 if (modules.isEmpty()) {
                     modulesNotFound(client);
                     return;
                 }
                 for (SampleAPI.Module module : modules) {
-                    if (module.getId() == input) {
-                        System.out.printf("Module '%s' selected. Printing trackable targets: \n", module.getModuleName());
-                        List<SampleAPI.Module.ModuleTarget> targets = module.getModuleTargets();
+                    tmp_range.add(module.getId());
+                    IntAndModule.put(module.getId(), module);
+                }
+                temp_input = getIntInput(tmp_range);
+
+                        System.out.printf("Module '%s' selected. Printing trackable targets: \n", IntAndModule.get(temp_input).getModuleName());
+                        List<SampleAPI.Module.ModuleTarget> targets = IntAndModule.get(temp_input).getModuleTargets();
                         if (targets.isEmpty()) {
-                            System.out.println("Looks like you have added nothing to targets.");
-                            System.out.println("Add a new one?\nPress 1. for Yes\nPress 2. for No\n");
-                            return;
+                            System.out.println("Looks like you have added nothing to targets.Add a new one?");
+                            System.out.println("\n\nPress 1. for Yes\nPress 2. for No\n");
+                            ArrayList<Integer> test = new ArrayList<>(YesOrNo.keySet());
+                            if (YesOrNo.get(getIntInput(test))){
+                                addNewTarget();
+                            }
+                            else {
+                                return;
+                            }
                         }
                         System.out.println("\n---List of Targets--");
                         int targetNro = 0;
-                        Map<Integer, SampleAPI.Module.ModuleTarget> idAndTarget = new HashMap<>();
                         for (SampleAPI.Module.ModuleTarget target : targets) {
                             idAndTarget.put(targetNro, target);
                             targetNro++;
@@ -221,12 +239,12 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
                         }
                         System.out.println("\nPress 1. to select old target\nSelect 2. to create new target\nSelect 3. to remove target.\nSelect 4. to return main menu");
-                        while (true) {
-                            try {
-                                input = reader.nextInt();
-                                switch (input){
+                        Integer [] choices = {1, 2, 3, 4};
+                                 temp_input= getIntInput(new ArrayList<Integer>(Arrays.asList(choices)));
+                                switch (temp_input){
                                     case 1:{
                                         System.out.println("Selecting old target for adding trackables. Give corresponding ID from above: ");
+                                        temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
                                         break;
                                     }case 2:{
                                         System.out.println("Creating new target: ");
@@ -245,26 +263,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                                         throw new InputMismatchException();
                                     }
                                 }
-
-                        } catch (InputMismatchException e) {
-                            System.out.println("Incorrect choice, please try again.");
-                        }
-                        }
-
-
-                     //   return;
-                    }
-
-                }
-                throw new InputMismatchException();
-
-            } catch (InputMismatchException e) {
-                System.out.println("Incorrect choice, please try again.");
-            }
         }
-       // System.out.println("Sorry, not implemented yet. Run tests.");
-
-
     }
 
     private void runTest(Scanner reader, SampleAPI client) {
