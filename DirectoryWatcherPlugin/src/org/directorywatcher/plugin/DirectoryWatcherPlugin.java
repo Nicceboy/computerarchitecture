@@ -289,13 +289,13 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     enum Event {
         ECreated, EModified
     }
-    
+
     DirectoryEvent checkforKeywords(DirectoryEvent object, WatchKey key) throws FailedToDoPluginThing{
 
 
         Scanner s;
         try {
-            s = new Scanner(new File(object.getModuleExtraInfo()));
+            s = new Scanner(new File(object.getFileName()));
             ArrayList <String> matches = new ArrayList<String>();
             while (s.hasNextLine()){
                 String nextLine = s.nextLine();

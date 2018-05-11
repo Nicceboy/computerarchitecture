@@ -478,7 +478,8 @@ class SampleClient implements SampleAPI.SampleAPIListener {
     }
 
     public void changeEventHappened(String response, String text, String file) {
-        System.out.print("Do something");
+        System.out.println("WE GOT A HIT!!");
+        System.out.printf("Module name: %s\nModule target: %s\nFound things: %s\n", response, text, file);
     }
 
 }

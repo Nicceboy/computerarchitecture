@@ -28,8 +28,12 @@ public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject {
         return this.plugin.getPluginName();
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
     public String getModuleExtraInfo() {
-        return this.fileName;
+        return (this.event + " in: " +this.fileName);
     }
 
     public List<String> getTrackablesFound() {

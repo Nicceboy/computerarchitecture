@@ -234,10 +234,12 @@ public class SampleAPI extends Thread {
                                                     notifyMessage.append("\nWe got a hit! Following trackables have been found in following contex: \n");
                                                     notifyMessage.append(String.format("Module name: %s\n", moduleName));
                                                     notifyMessage.append(String.format("Target name: %s\n", moduleTarget));
+
                                                     for (String trackable : foundThings) {
                                                         notifyMessage.append(String.format(trackable + ", "));
                                                     }
-                                                    this.instance.notify(notifyMessage.toString());
+                                                    this.instance.changeEventHappened(moduleName, moduleTarget, foundThings.toString());
+                                                    //this.instance.notify(notifyMessage.toString());
 
 
                                                 } else {
