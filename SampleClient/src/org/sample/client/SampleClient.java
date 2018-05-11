@@ -1,9 +1,11 @@
 package org.sample.client;
+
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Array;
 import java.util.Scanner;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 import org.sample.api.SampleAPI;
 import org.sample.api.SampleAPI.ClientState;
 
@@ -26,14 +28,14 @@ class Main {
 class SampleClient implements SampleAPI.SampleAPIListener {
 
 
-    void run(String [] args) {
+    void run(String[] args) {
 
 
         Scanner reader = new Scanner(System.in);
 
         System.out.println("Initializing api...");
         SampleAPI client = new SampleAPI(this);
-        if (args.length > 0 && args[0].equals("DEBUG")){
+        if (args.length > 0 && args[0].equals("DEBUG")) {
             client.deBugginEnabled = true;
         }
         client.prepareClient();
@@ -67,7 +69,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-                //By looking volatile isThreadReady inSampleAPI, we can synchronize printing to console bit better
+            //By looking volatile isThreadReady inSampleAPI, we can synchronize printing to console bit better
             if (client.stateOfThread().get()) {
                 //  client.setThreadNotReady();
                 while (true) {
@@ -79,9 +81,9 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         while (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(1)) {
 
                             try {
-                               // System.out.println("Timer started.");
+                                // System.out.println("Timer started.");
                                 Thread.sleep(1000);
-                                String time  = String.format("Reloading modules in: %d seconds.\r", TimeUnit.MILLISECONDS.toSeconds(TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)));
+                                String time = String.format("Reloading modules in: %d seconds.\r", TimeUnit.MILLISECONDS.toSeconds(TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)));
                                 System.out.print(time);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
@@ -139,7 +141,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         }
                         default: {
                             throw new InputMismatchException();
-                                                    }
+                        }
                     }
                 } catch (InputMismatchException e) {
                     System.out.println("Incorrect choice, please try again.");
@@ -168,24 +170,25 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
     }
 
-    private int getIntInput(ArrayList<Integer> range){
+    private int getIntInput(ArrayList<Integer> range) {
         Scanner reader = new Scanner(System.in);
-        while (true){
+        while (true) {
             try {
                 int input = reader.nextInt();
-                if (range.contains(input)){
+                if (range.contains(input)) {
                     return input;
-                }else {
+                } else {
                     throw new InputMismatchException();
                 }
 
-            }catch (InputMismatchException e){
+            } catch (InputMismatchException e) {
                 System.out.println("Incorrect choice, please try again.");
             }
         }
 
     }
-    private void addNewTarget(SampleAPI.Module module){
+
+    private void addNewTarget(SampleAPI.Module module) {
 
         Scanner reader = new Scanner(System.in);
         String input;
@@ -194,25 +197,32 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         String targetName;
         System.out.printf("Please, give a target. Usage of model:\n%s\n", module.getModuleUsage());
         targetName = reader.nextLine();
-       // module.addTarget(targetName);
+        // module.addTarget(targetName);
+        SampleAPI.Module.ModuleTarget target = module.new ModuleTarget(targetName);
+        module.addTarget(addTrackables(target));
+
+
+    }
+
+    private SampleAPI.Module.ModuleTarget addTrackables(SampleAPI.Module.ModuleTarget target) {
+        Scanner reader = new Scanner(System.in);
+        String input;
+        ArrayList<String> trackables = new ArrayList<String>();
 
         System.out.println("Thank you. Now, give trackable things. For example keywords. Give keyword, press Enter. Stop by writing QUIT (Hopefully you don't want track that (: )'");
-        while (true){
-                input = reader.nextLine();
-                if (input.equals("QUIT")){
-                    break;
-                }
-                trackables.add(input);
-                System.out.println("OK. Give new entry:");
+        while (true) {
+            input = reader.nextLine();
+            if (input.equals("QUIT")) {
+                break;
+            }
+            trackables.add(input);
+            System.out.println("OK. Give new entry:");
 
         }
-        SampleAPI.Module.ModuleTarget target = module.new ModuleTarget(targetName);
         target.storeTempAddables(trackables);
         target.newChanges();
-        module.addTarget(target);
-        System.out.printf("Trackables added to target %s.\n", targetName);
-
-
+        System.out.printf("Trackables added to target %s.\n", target.getName());
+        return target;
     }
 
     private void AddOrRemoveTrackables(SampleAPI client) {
@@ -221,7 +231,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         int selectedModule;
         Map<Integer, SampleAPI.Module> IntAndModule = new HashMap<>();
         Map<Integer, SampleAPI.Module.ModuleTarget> idAndTarget = new HashMap<>();
-        HashMap<Integer, Boolean> YesOrNo = new HashMap<Integer, Boolean>(){{
+        HashMap<Integer, Boolean> YesOrNo = new HashMap<Integer, Boolean>() {{
             put(1, true);
             put(2, false);
         }};
@@ -230,76 +240,97 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         System.out.println("Here you can add or remove trackables. Select Module by giving corresponding ID: ");
         while (true) {
 
-                List<SampleAPI.Module> modules = client.getModules();
-                if (modules.isEmpty()) {
-                    modulesNotFound(client);
+            List<SampleAPI.Module> modules = client.getModules();
+            if (modules.isEmpty()) {
+                modulesNotFound(client);
+                return;
+            }
+            for (SampleAPI.Module module : modules) {
+                tmp_range.add(module.getId());
+                IntAndModule.put(module.getId(), module);
+            }
+            selectedModule = getIntInput(tmp_range);
+
+            System.out.printf("Module '%s' selected. Printing trackable targets: \n", IntAndModule.get(selectedModule).getModuleName());
+            List<SampleAPI.Module.ModuleTarget> targets = IntAndModule.get(selectedModule).getModuleTargets();
+            if (targets.isEmpty()) {
+                System.out.println("Looks like you have added nothing to targets.Add a new one?");
+                System.out.println("\n\nPress 1. for Yes\nPress 2. for No\n");
+                ArrayList<Integer> test = new ArrayList<>(YesOrNo.keySet());
+                if (YesOrNo.get(getIntInput(test))) {
+                    addNewTarget(IntAndModule.get(selectedModule));
+                } else {
                     return;
                 }
-                for (SampleAPI.Module module : modules) {
-                    tmp_range.add(module.getId());
-                    IntAndModule.put(module.getId(), module);
+            }
+            boolean notListedTargetsYet = true;
+
+
+            while (true) {
+                int targetNro = 0;
+                System.out.println("\n---List of Targets--");
+                for (SampleAPI.Module.ModuleTarget target : targets) {
+                    if(notListedTargetsYet) {
+                        targetNro++;
+                        idAndTarget.put(targetNro, target);
+                    }
+                    System.out.printf("ID: %d\nName: %s\n", targetNro, target.getName());
+                    System.out.print("Trackables: ");
+                    for (String trackable : target.getTrackables()) {
+                        System.out.print(trackable + ", ");
+                    }
+                    System.out.println("\n");
+                    System.out.print("Trackables to add pending: ");
+                    for (String trackable : target.getTempAddables()) {
+                        System.out.print(trackable + ", ");
+                    }
+                    System.out.println("\n");
+                    System.out.print("Trackables to remove pending: ");
+                    for (String trackable : target.getTempRemovables()) {
+                        System.out.print(trackable + ", ");
+                    }
+                    System.out.println("\n");
+
+
                 }
-                selectedModule = getIntInput(tmp_range);
+                notListedTargetsYet = false;
 
-                        System.out.printf("Module '%s' selected. Printing trackable targets: \n", IntAndModule.get(selectedModule).getModuleName());
-                        List<SampleAPI.Module.ModuleTarget> targets = IntAndModule.get(selectedModule).getModuleTargets();
-                        if (targets.isEmpty()) {
-                            System.out.println("Looks like you have added nothing to targets.Add a new one?");
-                            System.out.println("\n\nPress 1. for Yes\nPress 2. for No\n");
-                            ArrayList<Integer> test = new ArrayList<>(YesOrNo.keySet());
-                            if (YesOrNo.get(getIntInput(test))){
-                                addNewTarget(IntAndModule.get(selectedModule));
-                            }
-                            else {
-                                return;
-                            }
-                        }
-                        System.out.println("\n---List of Targets--");
-                        int targetNro = 0;
-                        for (SampleAPI.Module.ModuleTarget target : targets) {
-                            idAndTarget.put(targetNro, target);
-                            targetNro++;
-                            System.out.printf("ID: %d\nName: %s\n",targetNro, target.getName());
-                            System.out.print("Trackables: ");
-                            for (String trackable : target.getTrackables()) {
-                                System.out.print(trackable + ", ");
-                            }
-                            System.out.println("\n");
+                System.out.println("\nSelect 1. to select old target\nSelect 2. to create new target\nSelect 3. to remove target.\nSelect 4. to Save and return main menu");
+                Integer[] choices = {1, 2, 3, 4};
+                temp_input = getIntInput(new ArrayList<Integer>(Arrays.asList(choices)));
+                switch (temp_input) {
+                    case 1: {
+                        System.out.println("Selecting old target for adding trackables. Give corresponding ID from above: ");
+                        temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
+                        addTrackables(idAndTarget.get(temp_input));
 
+                        break;
+                    }
+                    case 2: {
+                        System.out.println("Creating new target: ");
+                        addNewTarget(IntAndModule.get(selectedModule));
+                        notListedTargetsYet = true;
+                        break;
+                    }
+                    case 3: {
+                        System.out.println("Not implemented yet. ");
+//                        System.out.println("Selecting old target for removing trackables. Give corresponding ID from above: ");
+                        break;
+                    }
+                    case 4: {
+                        System.out.println("Saving changes...");
+                        try {
+                            client.commitChanges();
+                        } catch (InterruptedException e) {
+                            System.out.println("Updates failed: " + e);
                         }
-                        while (true) {
-                            System.out.println("\nPress 1. to select old target\nSelect 2. to create new target\nSelect 3. to remove target.\nSelect 4. to Save and return main menu");
-                            Integer[] choices = {1, 2, 3, 4};
-                            temp_input = getIntInput(new ArrayList<Integer>(Arrays.asList(choices)));
-                            switch (temp_input) {
-                                case 1: {
-                                    System.out.println("Selecting old target for adding trackables. Give corresponding ID from above: ");
-                                    temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
-                                    break;
-                                }
-                                case 2: {
-                                    System.out.println("Creating new target: ");
-                                    addNewTarget(IntAndModule.get(selectedModule));
-                                    break;
-                                }
-                                case 3: {
-                                    System.out.println("Selecting old target for removing trackables. Give corresponding ID from above: ");
-                                    break;
-                                }
-                                case 4: {
-                                    System.out.println("Saving changes...");
-                                    try {
-                                        client.commitChanges();
-                                    } catch (InterruptedException e) {
-                                        System.out.println("Updates failed: " + e);
-                                    }
-                                    return;
-                                }
-                                default: {
-                                    throw new InputMismatchException();
-                                }
-                            }
-                        }
+                        return;
+                    }
+                    default: {
+                        throw new InputMismatchException();
+                    }
+                }
+            }
         }
     }
 
@@ -379,7 +410,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
     private void selectModuleAndShowTargets(Scanner reader, SampleAPI client) {
 
-        HashMap<Integer, Boolean> YesOrNo = new HashMap<Integer, Boolean>(){{
+        HashMap<Integer, Boolean> YesOrNo = new HashMap<Integer, Boolean>() {{
             put(1, true);
             put(2, false);
         }};
@@ -400,11 +431,10 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                             System.out.println("Looks like you have added nothing to targets. Add a new one?");
                             System.out.println("\n\nPress 1. for Yes\nPress 2. for No\n");
                             ArrayList<Integer> test = new ArrayList<>(YesOrNo.keySet());
-                            if (YesOrNo.get(getIntInput(test))){
+                            if (YesOrNo.get(getIntInput(test))) {
                                 addNewTarget(module);
                                 client.commitChanges();
-                            }
-                            else {
+                            } else {
                                 return;
                             }
                             return;
@@ -440,7 +470,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         System.out.println("Press 2. to select module and check your targets.");
         System.out.println("Press 3. to add or remove trackable objects from specified target on speficied model.");
         System.out.println("Press 4. to run test sample.");
-        System.out.println("Press 5. to manually syncronize with server.");
+        System.out.println("Press 5. to manually synchronize with server.");
     }
 
     public void notify(String data) {

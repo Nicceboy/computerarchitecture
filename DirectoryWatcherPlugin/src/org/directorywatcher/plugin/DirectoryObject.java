@@ -76,13 +76,15 @@ class DirectoryObject extends Observable implements KeywordPlugin.KeywordTrackab
             trackables.add(newTrack);
             return true;
         } else {
-            System.out.println("Directory already exists: " + newTrack);
+            System.out.println("Keyword already exists: " + newTrack);
             return false;
         }
     }
-
-    public boolean removeTrackable(String trackToRemove) {
-        return (trackables.removeIf(trackToRemove::equals));
+    public boolean removeTrackable(String thingToRemove) {
+        return (trackables.removeIf(thingToRemove::equals));
+    }
+    public boolean removeTrackable(List<String> thingsToRemove) {
+        return (trackables.removeAll(thingsToRemove));
     }
 
     void setDirty() {

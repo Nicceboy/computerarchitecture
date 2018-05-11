@@ -626,18 +626,18 @@ public class SampleAPI extends Thread {
             }
 
             public void storeTempAddables(ArrayList<String> addables) {
-                this.temp_trackablesToAdd = addables;
+                this.temp_trackablesToAdd.addAll(addables);
             }
 
             public void storeTempRemovables(ArrayList<String> removables) {
-                this.temp_trackablesToRemove = removables;
+                this.temp_trackablesToRemove.addAll(removables);
             }
 
-            List<String> getTempAddables() {
+            public List<String> getTempAddables() {
                 return this.temp_trackablesToAdd;
             }
 
-            List<String> getTempRemovables() {
+            public List<String> getTempRemovables() {
                 return this.temp_trackablesToRemove;
             }
 

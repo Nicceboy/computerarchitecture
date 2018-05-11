@@ -2,6 +2,8 @@ package org.directorywatcher.plugin;
 
 import org.keyword.plugin.KeywordPlugin;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.WatchEvent.Kind;
@@ -170,9 +172,35 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
         });
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
+        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
+        for (Map.Entry<WatchKey,DirectoryObject> entry : keys.entrySet())
+        {
+            if(keys.get(entry).getExtraInfo().equals(extraInfo)){
+                keys.get(entry).removeTrackable(trackables);
 
+            }  if (keys.get(entry).getTrackables().isEmpty()){
+                    removeTarget(observer);
+        }
+
+        }
+
+
+    }
+    void removeTarget(Observer observer){
+        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
+        for (Map.Entry<WatchKey,DirectoryObject> entry : keys.entrySet())
+        {
+            DirectoryObject current = entry.getValue();
+            current.deleteObserver(observer);
+            if (current.countObservers() == 0) {
+                entry.getKey().cancel();
+                itemsToRemove.add(entry.getKey());
+            }
+        }
+        keys.entrySet().removeAll(itemsToRemove);
     }
 
     public void removeWatchedDirectory(Path dir, Observer o) {
@@ -185,6 +213,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     void processEvents() throws FailedToDoPluginThing {
         // wait for key to be signaled
         System.out.println("DirectoryWatcher running...");
+        DirectoryEvent matchFound;
         WatchKey key = null;
         try {
             key = watcher.take();
@@ -212,10 +241,16 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE
                             && !Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                         keys.get(key).setDirty();
-                        keys.get(key).notifyObservers(new DirectoryEvent(Event.ECreated, child.toString(), this));
+                        matchFound = checkforKeywords(new DirectoryEvent(Event.ECreated, child.toString(), this), key);
+                        if (matchFound != null) {
+                            keys.get(key).notifyObservers(matchFound);
+                        }
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                         keys.get(key).setDirty();
-                        keys.get(key).notifyObservers(new DirectoryEvent(Event.EModified, child.toString(), this));
+                        matchFound = checkforKeywords(new DirectoryEvent(Event.EModified, child.toString(), this), key);
+                        if (matchFound != null) {
+                            keys.get(key).notifyObservers(matchFound);
+                        }
                     }
 
                     // if directory is created, and watching recursively, then
@@ -254,21 +289,36 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     enum Event {
         ECreated, EModified
     }
+    
+    DirectoryEvent checkforKeywords(DirectoryEvent object, WatchKey key) throws FailedToDoPluginThing{
 
 
-    //   public void removeWatchedDirectories(Observer o) {
-//        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
-//        for (Map.Entry<WatchKey,PathObservable> entry : keys.entrySet())
-//        {
-//            PathObservable current = entry.getValue();
-//            current.deleteObserver(o);
-//            if (current.countObservers() == 0) {
-//                entry.getKey().cancel();
-//                itemsToRemove.add(entry.getKey());
-//            }
-//        }
-//        keys.entrySet().removeAll(itemsToRemove);
-    //  }
+        Scanner s;
+        try {
+            s = new Scanner(new File(object.getModuleExtraInfo()));
+            ArrayList <String> matches = new ArrayList<String>();
+            while (s.hasNextLine()){
+                String nextLine = s.nextLine();
+                for (String word : this.keys.get(key).getTrackables()) {
+                    if (nextLine.toLowerCase().contains(word.toLowerCase())) {
+                        System.out.println("Keyword " + word + " in file, adding to client notification msg.");
+                      matches.add(word);
+                    }
+                }
+            }
+            s.close();
+            // Send the line to the client.
+            if(matches.isEmpty()){
+                return null;
+            }
+            object.addkeywords(matches);
+            return object;
+
+        } catch (FileNotFoundException e1) {
+            throw new FailedToDoPluginThing("File disappeared during scanning or something else mysterious happened.");
+        }
+
+    }
 
 
 

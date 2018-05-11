@@ -7,7 +7,7 @@ Repository contains Application that presents a Server, which supports plugins. 
 Eg. As example plugin, here is Plugin vesion of DirectoryWatcher presented in course example.
 This enables you to follow changes on filesystems of Server. User is able to get notifications from server, once she/he has connected there with TCP and added something to track. 
 
-By following the API of KeywordPlugin presented in this repo, it's able to follow anything you are able to implement with it.
+By following the API of KeywordPlugin presented in this repo, you are able to produce plugin which is able to follow anything you are able to implement with by the limits of API.
 
 We have provided example console client SampleClient, which works on any Java environment.
 

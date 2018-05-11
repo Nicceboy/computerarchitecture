@@ -2,6 +2,7 @@ package org.directorywatcher.plugin;
 
 import org.keyword.plugin.KeywordPlugin;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject {
 
     private DirectoryWatcherPlugin.Event event;
     private String fileName;
+    private ArrayList<String> keywords = new ArrayList<>();
 
     DirectoryEvent(DirectoryWatcherPlugin.Event e, String file, DirectoryWatcherPlugin plugin) {
         super();
@@ -18,17 +20,19 @@ public class DirectoryEvent implements KeywordPlugin.KeywordNotifyObject {
         this.event = e;
         this.fileName = file;
     }
+    public void addkeywords(ArrayList<String> keywords){
+        this.keywords = keywords;
+    }
 
     public String getModuleName() {
         return this.plugin.getPluginName();
     }
 
     public String getModuleExtraInfo() {
-        return "test";
+        return this.fileName;
     }
 
     public List<String> getTrackablesFound() {
-        String[] array = {"Found This", "And this."};
-        return Arrays.asList(array);
+        return this.keywords;
     }
 }
