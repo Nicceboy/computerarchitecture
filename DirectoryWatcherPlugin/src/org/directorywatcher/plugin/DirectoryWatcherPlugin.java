@@ -137,7 +137,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
     }
 
-    private void register(DirectoryObject directoryObject) throws IOException, FailedToDoPluginThing {
+    private void register(DirectoryObject directoryObject) throws IOException {
         System.out.println("Registering a path " + directoryObject.getPath().toString());
         WatchKey key = directoryObject.getPath().register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
 
@@ -149,7 +149,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
         this.keys.put(key, directoryObject);
     }
 
-    private void registerAll(final DirectoryObject directoryObject) throws IOException, FailedToDoPluginThing {
+    private void registerAll(final DirectoryObject directoryObject) throws IOException {
         //  register directory and sub-directories
         //Master path must be registered, new object already created in recursive
         register(directoryObject);
@@ -162,7 +162,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
                 try {
                     register(new DirectoryObject(dir, directoryObject, self));
-                } catch (FailedToDoPluginThing failed) {
+                } catch (IOException e) {
                     throw  new IOException("Something went wrong when adding recursively in path; " + dir.toString());
                 }
                 return FileVisitResult.CONTINUE;
@@ -213,11 +213,9 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
                             && !Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                         keys.get(key).setDirty();
                         keys.get(key).notifyObservers(new DirectoryEvent(Event.ECreated, child.toString(), this));
-                        System.out.println("Ha, entry found : child.toString()");
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                         keys.get(key).setDirty();
                         keys.get(key).notifyObservers(new DirectoryEvent(Event.EModified, child.toString(), this));
-                        System.out.println("Ha, entry found : child.toString()");
                     }
 
                     // if directory is created, and watching recursively, then
@@ -272,11 +270,6 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 //        keys.entrySet().removeAll(itemsToRemove);
     //  }
 
-
-    /**
-     * Register the given directory, and all its sub-directories, with the
-     * WatchService.
-     */
 
 
 }

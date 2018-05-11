@@ -9,8 +9,7 @@ class Main {
     public static void main(String[] args) {
 
         SampleClient sample = new SampleClient();
-        sample.run();
-
+        sample.run(args);
     }
 
 }
@@ -19,16 +18,22 @@ class Main {
 //SampleAPI is implementation of our protocol in Java language
 //Once Client is implemented according to our protocol, it does not need any updates, if our server gains or loses plugins (alias Modules)
 
+
+//Parameter DEBUG as running argument adds additional printing to SampleAPI
+
 class SampleClient implements SampleAPI.SampleAPIListener {
 
 
-    void run() {
+    void run(String [] args) {
 
 
         Scanner reader = new Scanner(System.in);
 
         System.out.println("Initializing api...");
         SampleAPI client = new SampleAPI(this);
+        if (args.length > 0 && args[0].equals("DEBUG")){
+            client.deBugginEnabled = true;
+        }
         client.prepareClient();
         while (true) {
             System.out.println("Give address, where we should connect: \n");
@@ -61,7 +66,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                 e.printStackTrace();
             }
                 //By looking volatile isThreadReady inSampleAPI, we can synchronize printing to console bit better
-            if (client.stateOfThread()) {
+            if (client.stateOfThread().get()) {
                 //  client.setThreadNotReady();
                 while (true) {
                     if (client.getModules().isEmpty()) {
@@ -133,7 +138,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         }
                         default: {
                             throw new InputMismatchException();
-                        }
+                                                    }
                     }
                 } catch (InputMismatchException e) {
                     System.out.println("Incorrect choice, please try again.");
@@ -149,7 +154,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
     private void pressEnter(SampleAPI client) {
         while (true) {
-            if (client.stateOfThread()) {
+            if (client.stateOfThread().get()) {
                 System.out.println("Press Enter to continue...");
                 try {
                     System.in.read();
@@ -161,10 +166,103 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         }
 
     }
+    private int getIntInput(Scanner reader, ArrayList<Integer> range){
+        while (true){
+            try {
+                int input = reader.nextInt();
+                if (range.contains(input)){
+                    return input;
+                }else {
+                    throw new InputMismatchException();
+                }
+
+            }catch (InputMismatchException e){
+                System.out.println("Incorrect choice, please try again.");
+            }
+        }
+
+    }
+    private void addNewTarget(){
+
+    }
 
     private void AddOrRemoveTrackables(Scanner reader, SampleAPI client) {
         //TODO
-        System.out.println("Sorry, not implemented yet. Run tests.");
+        System.out.println("Here you can add or remove trackables. Select Module by giving corresponding ID: ");
+        while (true) {
+            try {
+                int input = reader.nextInt();
+                List<SampleAPI.Module> modules = client.getModules();
+                if (modules.isEmpty()) {
+                    modulesNotFound(client);
+                    return;
+                }
+                for (SampleAPI.Module module : modules) {
+                    if (module.getId() == input) {
+                        System.out.printf("Module '%s' selected. Printing trackable targets: \n", module.getModuleName());
+                        List<SampleAPI.Module.ModuleTarget> targets = module.getModuleTargets();
+                        if (targets.isEmpty()) {
+                            System.out.println("Looks like you have added nothing to targets.");
+                            System.out.println("Add a new one?\nPress 1. for Yes\nPress 2. for No\n");
+                            return;
+                        }
+                        System.out.println("\n---List of Targets--");
+                        int targetNro = 0;
+                        Map<Integer, SampleAPI.Module.ModuleTarget> idAndTarget = new HashMap<>();
+                        for (SampleAPI.Module.ModuleTarget target : targets) {
+                            idAndTarget.put(targetNro, target);
+                            targetNro++;
+                            System.out.printf("ID: %d\nName: %s\n",targetNro, target.getName());
+                            System.out.print("Trackables: ");
+                            for (String trackable : target.getTrackables()) {
+                                System.out.print(trackable + ", ");
+                            }
+                            System.out.println("\n");
+
+                        }
+                        System.out.println("\nPress 1. to select old target\nSelect 2. to create new target\nSelect 3. to remove target.\nSelect 4. to return main menu");
+                        while (true) {
+                            try {
+                                input = reader.nextInt();
+                                switch (input){
+                                    case 1:{
+                                        System.out.println("Selecting old target for adding trackables. Give corresponding ID from above: ");
+                                        break;
+                                    }case 2:{
+                                        System.out.println("Creating new target: ");
+                                        addNewTarget();
+                                        break;
+                                    }
+                                    case 3:{
+                                        System.out.println("Selecting old target for removing trackables. Give corresponding ID from above: ");
+                                        break;
+                                    }
+                                    case 4:{
+                                        System.out.println("Returning to main menu..");
+                                        return;
+                                    }
+                                    default:{
+                                        throw new InputMismatchException();
+                                    }
+                                }
+
+                        } catch (InputMismatchException e) {
+                            System.out.println("Incorrect choice, please try again.");
+                        }
+                        }
+
+
+                     //   return;
+                    }
+
+                }
+                throw new InputMismatchException();
+
+            } catch (InputMismatchException e) {
+                System.out.println("Incorrect choice, please try again.");
+            }
+        }
+       // System.out.println("Sorry, not implemented yet. Run tests.");
 
 
     }
@@ -224,6 +322,10 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             System.out.println(String.format("%-45s", " ").replace(' ', '-'));
             System.out.printf("%-30s %15d\n", module.getModuleName(), module.getId());
             System.out.println(String.format("%-45s", " ").replace(' ', '-'));
+            System.out.println(String.format("%-45s\n", module.getModuleDesc()));
+            System.out.println(String.format("%-45s\n", module.getModuleUsage()));
+            System.out.println(String.format("%-45s", " ").replace(' ', '-'));
+
 
         }
     }
@@ -275,7 +377,6 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
             } catch (InputMismatchException e) {
                 System.out.println("Incorrect choice, please try again.");
-                reader.next();
             }
         }
 
