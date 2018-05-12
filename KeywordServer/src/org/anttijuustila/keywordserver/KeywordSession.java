@@ -114,6 +114,7 @@ public class KeywordSession extends Thread implements Observer {
                                     JSONArray targets;
 
                                     if (ModuleAndTargets.containsKey("TrackableAndTargetPair")){
+                                        KeywordPlugin kp = runningPlugins.get(ModuleAndTargets.get("ModuleName").toString());
                                         targets = (JSONArray)ModuleAndTargets.get("TrackableAndTargetPair");
                                         for (Object target_o : targets){
                                             JSONObject target = (JSONObject) target_o;
@@ -136,17 +137,18 @@ public class KeywordSession extends Thread implements Observer {
                                             }
 
 
-                                            if (trackablesToAdd.size() > 0) {
+                                                if (trackablesToAdd.size() > 0) {
+                                                    if (trackablesToRemove.size() > 0) {
 
-                                                    KeywordPlugin kp = runningPlugins.get(ModuleAndTargets.get("ModuleName").toString());
+                                                        trackablesToAdd.removeAll(trackablesToRemove);
+                                                    }
                                                     kp.addTrackables(trackablesToAdd, target.get("ExtraInfo").toString(), this);
+                                                                                             }
 
-                                            }
+                                                if (trackablesToRemove.size() > 0) {
+                                                        kp.removeTrackables(trackablesToRemove, target.get("ExtraInfo").toString(), this);
 
-                                            if (trackablesToRemove.size() > 0) {
 
-                                                    KeywordPlugin kp = runningPlugins.get(ModuleAndTargets.get("ModuleName").toString());
-                                                    kp.removeTrackables(trackablesToRemove, target.get("ExtraInfo").toString(), this);
 
                                             }
 

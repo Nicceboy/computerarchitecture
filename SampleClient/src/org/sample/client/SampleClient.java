@@ -40,28 +40,40 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         }
         client.prepareClient();
         while (true) {
-            System.out.println("Give address, where we should connect: \n");
+            System.out.println("\nGive address where we should connect: \n");
             String address = reader.nextLine();
             client.attach(address);
+            long start = System.currentTimeMillis();
+            System.out.println();
+            while (System.currentTimeMillis() - start < TimeUnit.SECONDS.toMillis(10)) {
 
-            try {
-                TimeUnit.SECONDS.sleep(5);
-                if (client.myState() == ClientState.EConnected) {
-                    break;
-                } else {
-                    client.detach();
+                try {
+                    if (client.myState() == ClientState.EConnected) {
+                        break;
+                    }else{
+                        String time = String.format("Trying to connect address %s... Disconnect in %d seconds.\r", address, TimeUnit.MILLISECONDS.toSeconds(TimeUnit.SECONDS.toMillis(10) - (System.currentTimeMillis() - start)));
+                        System.out.print(time);
+                        Thread.sleep(1000);
+                    }
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-
-            } catch (InterruptedException e) {
-                System.out.println("Something went wrong..");
-                System.exit(1);
             }
+            if (client.myState() == ClientState.EConnected) {
+                break;
+            }else {
+
+                client.detach();
+
+            }
+
+
 
         }
 
 
         while (true) {
-
             try {
                 //Slow down loop a bit
                 Thread.sleep(10);
@@ -70,7 +82,8 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                 e.printStackTrace();
             }
             //By looking volatile isThreadReady inSampleAPI, we can synchronize printing to console bit better
-            if (client.stateOfThread().get()) {
+
+             if (client.stateOfThread().get()) {
                 //  client.setThreadNotReady();
                 while (true) {
                     if (client.getModules().isEmpty()) {
@@ -145,6 +158,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                     }
                 } catch (InputMismatchException e) {
                     System.out.println("Incorrect choice, please try again.");
+                    reader.next();
                     client.setThreadReady();
                 }
 
@@ -339,7 +353,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         int selectedModule = 1;
         String ExtraInfo = "ContryNews";
         String ExtraInfo2 = "SomeStuff";
-        String ExtraInfo3 = "C:\\Users\\Niklas Saari\\Desktop\\CompArch\\artifacts\\KeywordServer_jar\\plugins, recursive";
+        String ExtraInfo3 = "C:\\Test, recursive";
         String[] testAddables = {"Kana", "Koira", "Kissa", "Lehma", "Sika"};
         String[] testRemovables = {"Heippa", "Vaan"};
         ArrayList<String> trackablesToAdd = new ArrayList<String>(Arrays.asList(testAddables));

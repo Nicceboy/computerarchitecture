@@ -106,7 +106,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
     //Add watched directories
     @Override
-    public void addTrackables(List<String> keywords, String dir, Observer o) throws FailedToDoPluginThing {
+    public synchronized void  addTrackables(List<String> keywords, String dir, Observer o) throws FailedToDoPluginThing {
 
         for (WatchKey dirKey : this.keys.keySet()) {
             DirectoryObject temp = this.keys.get(dirKey);
@@ -135,8 +135,8 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
             }
         } catch (IOException e) {
             throw new FailedToDoPluginThing("Incorrect path: " + e);
-        }
 
+        }
     }
 
     private void register(DirectoryObject directoryObject) throws IOException {
@@ -152,9 +152,9 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
     }
 
     private void registerAll(final DirectoryObject directoryObject) throws IOException {
+
         //  register directory and sub-directories
         //Master path must be registered, new object already created in recursive
-        register(directoryObject);
         DirectoryWatcherPlugin self = this;
         System.out.println("Registering a path with subdirs " + directoryObject.getPath().toString());
         Files.walkFileTree(directoryObject.getPath(), new SimpleFileVisitor<Path>() {
@@ -163,7 +163,12 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
                     throws IOException {
 
                 try {
-                    register(new DirectoryObject(dir, directoryObject, self));
+                    if (directoryObject.isMasterPath()){
+                        register(directoryObject);
+                    }else {
+                        register(new DirectoryObject(dir, directoryObject, self));
+                    }
+
                 } catch (IOException e) {
                     throw  new IOException("Something went wrong when adding recursively in path; " + dir.toString());
                 }
@@ -174,21 +179,20 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override
-    public void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
-        List<WatchKey> itemsToRemove = new ArrayList<WatchKey>();
-        for (Map.Entry<WatchKey,DirectoryObject> entry : this.keys.entrySet())
-        //
-        {if(keys.get(entry).isMasterPath()) {
-            if (this.keys.get(entry).getExtraInfo().equals(extraInfo)) {
-                this.keys.get(entry).removeTrackable(trackables);
+    public synchronized void removeTrackables(List<String> trackables, String extraInfo, Observer observer) throws FailedToDoPluginThing {
+
+        for (Map.Entry<WatchKey,DirectoryObject> entry : this.keys.entrySet()){
+
+        if(entry.getValue().isMasterPath()) {
+            if (entry.getValue().getExtraInfo().equals(extraInfo)) {
+                entry.getValue().removeTrackable(trackables);
 
             }
-            if (keys.get(entry).getTrackables().isEmpty()) {
+            if (entry.getValue().getTrackables().isEmpty()) {
                 removeTarget(observer);
             }
         }
         }
-
 
     }
     void removeTarget(Observer observer){

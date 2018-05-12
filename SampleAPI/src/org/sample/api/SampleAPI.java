@@ -130,7 +130,7 @@ public class SampleAPI extends Thread {
     }
 
     @Override
-    public void run() {
+    public synchronized void run() {
         super.run();
 
         byte[] messageByte = new byte[4096];
@@ -266,6 +266,7 @@ public class SampleAPI extends Thread {
 
 
                                     }
+
                                 }
                             } catch (SocketTimeoutException e) {
                                 // Not an error, read times out and this gives us a change to send every now and then.
@@ -293,11 +294,16 @@ public class SampleAPI extends Thread {
                         break;
                     case EConnecting:
                         // Server listens in port 10000.
-                        this.instance.notify("Starting connection to the server..");
+                        if (deBugginEnabled) {
+
+                            this.instance.notify("Starting connection to the server..");
+                        }
                         try {
                             clientSocket = new Socket(serverAddr, 10000);
                         } catch (UnknownHostException e) {
-                            this.instance.notify("Requested address not found.");
+                            if (deBugginEnabled){
+                                this.instance.notify("Requested address not found.");
+                        }
                             this.state = ClientState.EDetached;
                             break;
                         }
