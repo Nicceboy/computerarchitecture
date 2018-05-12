@@ -5,7 +5,13 @@ Original repository can be found [here.](https://bitbucket.org/anttijuu/keywords
 
 Repository contains Application that presents a Server, which supports plugins. Plugins can be anything, what can make you to track something special.
 Eg. As example plugin, here is Plugin vesion of DirectoryWatcher presented in course example.
-This enables you to follow changes on filesystems of Server. User is able to get notifications from server, once she/he has connected there with TCP and added something to track. 
+This enables you to follow changes on filesystems of Server. User is able to get notifications from server, once she/he has connected there with TCP and added something to track.
+
+**These modules can be ignored**
+* WordWatcher
+* KeywordClient
+
+No changes on code in them. WordWatcher has some changes for styling.
 
 By following the API of KeywordPlugin presented in this repo, you are able to produce plugin which is able to follow anything you are able to implement with by the limits of API.
 
