@@ -183,7 +183,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
 
         for (Map.Entry<WatchKey,DirectoryObject> entry : this.keys.entrySet()){
 
-        if(entry.getValue().isMasterPath()) {
+
             if (entry.getValue().getExtraInfo().equals(extraInfo)) {
                 entry.getValue().removeTrackable(trackables);
 
@@ -191,7 +191,7 @@ public class DirectoryWatcherPlugin implements KeywordPlugin {
             if (entry.getValue().getTrackables().isEmpty()) {
                 removeTarget(observer);
             }
-        }
+
         }
 
     }

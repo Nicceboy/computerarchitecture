@@ -2,10 +2,12 @@ package org.sample.client;
 
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.util.Scanner;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.org.apache.xpath.internal.operations.Mod;
 import org.sample.api.SampleAPI;
 import org.sample.api.SampleAPI.ClientState;
 
@@ -46,11 +48,11 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             long start = System.currentTimeMillis();
             System.out.println();
             while (System.currentTimeMillis() - start < TimeUnit.SECONDS.toMillis(10)) {
-
                 try {
                     if (client.myState() == ClientState.EConnected) {
                         break;
                     }else{
+                        client.attach(address);
                         String time = String.format("Trying to connect address %s... Disconnect in %d seconds.\r", address, TimeUnit.MILLISECONDS.toSeconds(TimeUnit.SECONDS.toMillis(10) - (System.currentTimeMillis() - start)));
                         System.out.print(time);
                         Thread.sleep(1000);
@@ -197,6 +199,7 @@ class SampleClient implements SampleAPI.SampleAPIListener {
 
             } catch (InputMismatchException e) {
                 System.out.println("Incorrect choice, please try again.");
+                reader.next();
             }
         }
 
@@ -213,17 +216,24 @@ class SampleClient implements SampleAPI.SampleAPIListener {
         targetName = reader.nextLine();
         // module.addTarget(targetName);
         SampleAPI.Module.ModuleTarget target = module.new ModuleTarget(targetName);
-        module.addTarget(addTrackables(target));
+        module.addTarget(AddOrRemoveTrackables(target, Modify.ADD));
 
 
     }
+    private void removeTarget(){
 
-    private SampleAPI.Module.ModuleTarget addTrackables(SampleAPI.Module.ModuleTarget target) {
+    }
+    private enum Modify {ADD, REMOVE}
+
+    private SampleAPI.Module.ModuleTarget AddOrRemoveTrackables(SampleAPI.Module.ModuleTarget target,  Modify method) {
         Scanner reader = new Scanner(System.in);
         String input;
         ArrayList<String> trackables = new ArrayList<String>();
 
-        System.out.println("Thank you. Now, give trackable things. For example keywords. Give keyword, press Enter. Stop by writing QUIT (Hopefully you don't want track that (: )'");
+        String event1 = method == Modify.ADD ? "trackable" : "removable";
+        String event2 = method == Modify.ADD ? "you don't want track" : "you are not tracking that";
+
+        System.out.printf("Thank you. Now, give %s things. For example keywords. Give keyword, press Enter. Stop by writing QUIT (Hopefully you don't want track that (: )'", event1, event2);
         while (true) {
             input = reader.nextLine();
             if (input.equals("QUIT")) {
@@ -233,11 +243,22 @@ class SampleClient implements SampleAPI.SampleAPIListener {
             System.out.println("OK. Give new entry:");
 
         }
-        target.storeTempAddables(trackables);
+        if (method == Modify.ADD){
+            target.storeTempAddables(trackables);
+        }
+        else if(method == Modify.REMOVE){
+            target.storeTempRemovables(trackables);
+        }
+        else {
+            throw new InputMismatchException("Unknown enum");
+        }
+
         target.newChanges();
-        System.out.printf("Trackables added to target %s.\n", target.getName());
+        String resultedWay = method == Modify.ADD ? "added to" : "removed from";
+        System.out.printf("Trackables %s target %s.\n", resultedWay, target.getName());
         return target;
     }
+
 
     private void AddOrRemoveTrackables(SampleAPI client) {
         //TODO
@@ -278,10 +299,13 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                 }
             }
             boolean notListedTargetsYet = true;
+            int targetNro = 0;
 
 
             while (true) {
-                int targetNro = 0;
+                if (notListedTargetsYet) {
+                  targetNro = 0;
+                }
                 System.out.println("\n---List of Targets--");
                 for (SampleAPI.Module.ModuleTarget target : targets) {
                     if(notListedTargetsYet) {
@@ -309,14 +333,14 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                 }
                 notListedTargetsYet = false;
 
-                System.out.println("\nSelect 1. to select old target\nSelect 2. to create new target\nSelect 3. to remove target.\nSelect 4. to Save and return main menu");
-                Integer[] choices = {1, 2, 3, 4};
+                System.out.println("\nSelect 1. to select old target to add trackables\nSelect 2. to create new target and trackables\nSelect 3. to remove trackables from target.\nSelect 4. to remove whole target\nSelect 5. to Save and return main menu\nSelect 6. To cancel and return main menu.");
+                Integer[] choices = {1, 2, 3, 4, 5, 6};
                 temp_input = getIntInput(new ArrayList<Integer>(Arrays.asList(choices)));
                 switch (temp_input) {
                     case 1: {
                         System.out.println("Selecting old target for adding trackables. Give corresponding ID from above: ");
                         temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
-                        addTrackables(idAndTarget.get(temp_input));
+                        AddOrRemoveTrackables(idAndTarget.get(temp_input), Modify.ADD);
 
                         break;
                     }
@@ -327,17 +351,28 @@ class SampleClient implements SampleAPI.SampleAPIListener {
                         break;
                     }
                     case 3: {
-                        System.out.println("Not implemented yet. ");
-//                        System.out.println("Selecting old target for removing trackables. Give corresponding ID from above: ");
+                        System.out.println("Selecting old target for removing trackables. Give corresponding ID from above: ");
+                        temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
+                        AddOrRemoveTrackables(idAndTarget.get(temp_input), Modify.REMOVE);
                         break;
                     }
-                    case 4: {
+                    case 4:{
+                        System.out.println("Selecting old target and removing it. Give corresponding ID from above: ");
+                        temp_input = getIntInput(new ArrayList<>(idAndTarget.keySet()));
+                        IntAndModule.get(selectedModule).removeTarget(idAndTarget.get(temp_input));
+                        break;
+                    }
+                    case 5: {
                         System.out.println("Saving changes...");
                         try {
                             client.commitChanges();
                         } catch (InterruptedException e) {
                             System.out.println("Updates failed: " + e);
                         }
+                        return;
+                    }
+                    case 6: {
+                        System.out.println("Returning without savigin...");
                         return;
                     }
                     default: {

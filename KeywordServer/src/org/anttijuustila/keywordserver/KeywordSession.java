@@ -173,7 +173,7 @@ public class KeywordSession extends Thread implements Observer {
                 }catch (SocketException e){
                     System.out.println(sessionId + ": Session connection reseted. Closing..");
                     manager.removeSession(this);
-                    e.printStackTrace();
+                   // e.printStackTrace();
                     break;
                 }
 

@@ -9,6 +9,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.annotation.Target;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -16,6 +17,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -170,7 +172,9 @@ public class SampleAPI extends Thread {
 
                                         // Convert bytes to String, remembering that data is sent & received as UTF-16.
                                         String data = new String(messageByte, 0, bytesRead, StandardCharsets.UTF_16);
-                                        notifyMessage.append("\n---- Data received ---\n");
+                                        if (deBugginEnabled){
+                                            notifyMessage.append("\n---- Data received ---\n");
+                                    }
                                         // System.out.println("Data received: " + data);
                                         JSONObject root;
 
@@ -185,6 +189,7 @@ public class SampleAPI extends Thread {
                                             notifyMessage.append(String.format("ResponseType: %s\n", response));
                                             notifyMessage.append(String.format("Additional info: %s\n", addinfo));
                                         }
+                                        this.instance.notify(addinfo);
                                         switch (response) {
 
                                             case 1: {
@@ -484,10 +489,12 @@ public class SampleAPI extends Thread {
             JSONArray temp_TrackTargetPairs = new JSONArray();
             JSONObject temp_ModuleObj = new JSONObject();
             JSONObject temp_TargetObj = new JSONObject();
-
-            for (Module.ModuleTarget target : module.getModuleTargets()) {
-                assert false;
+            Iterator<Module.ModuleTarget> targetIterator = module.getModuleTargets().iterator();
+            try{
+            while (targetIterator.hasNext()) {
                 //Looping through targets
+
+                    Module.ModuleTarget target = targetIterator.next();
 
                 if (target.isThereChanges()) {
                     toAdd = target.getTempAddables();
@@ -503,8 +510,13 @@ public class SampleAPI extends Thread {
                     anyChanges = true;
                 }
 
+
                 //End of targets loop
             }
+            }
+                catch (ConcurrentModificationException e){
+                    this.instance.notify(String.format("Target %s removed. No trackables left.", temp_TargetObj.get("ExtraInfo").toString()));
+                }
             if (anyChanges) {
                 temp_ModuleObj.put("ModuleName", module.getModuleName());
                 temp_ModuleObj.put("TrackableAndTargetPair", temp_TrackTargetPairs);
@@ -610,7 +622,8 @@ public class SampleAPI extends Thread {
         }
 
         public void removeTarget(ModuleTarget target) {
-            this.moduleTargets.removeIf(a -> a.getName().equals(target.getName()));
+
+            target.storeTempRemovables(target.getTrackables());
         }
 
         void removeAllTargets() {
@@ -633,12 +646,14 @@ public class SampleAPI extends Thread {
                 this.targetName = Name;
             }
 
-            public void storeTempAddables(ArrayList<String> addables) {
+            public void storeTempAddables(List<String> addables) {
                 this.temp_trackablesToAdd.addAll(addables);
+                this.isThereChanges=true;
             }
 
-            public void storeTempRemovables(ArrayList<String> removables) {
+            public void storeTempRemovables(List<String> removables) {
                 this.temp_trackablesToRemove.addAll(removables);
+                this.isThereChanges =true;
             }
 
             public List<String> getTempAddables() {
@@ -666,6 +681,9 @@ public class SampleAPI extends Thread {
 
                 this.addTrackables(temp_trackablesToAdd);
                 this.removeTrackables(temp_trackablesToRemove);
+                if (this.trackables.isEmpty()){
+                    Module.this.moduleTargets.removeIf(a -> a.getName().equals(targetName));
+                }
 
                 this.isThereChanges = false;
                 this.temp_trackablesToAdd = new ArrayList<>();
