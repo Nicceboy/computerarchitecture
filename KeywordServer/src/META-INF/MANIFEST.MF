@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
 Main-Class: org.anttijuustila.keywordserver.KeywordServer
-
+Class-Path: lib/KeywordPlugin.jar lib/json-simple-1.1.1.jar

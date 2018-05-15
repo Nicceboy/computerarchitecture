@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: org.sample.client.Main
+Class-Path: lib/SampleAPI.jar lib/json-simple-1.1.1.jar
 

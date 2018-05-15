@@ -13,6 +13,6 @@ To start client in it's folder:
 java -jar KeywordClient.jar
 ```
 
-KeywordPlugin-api is just needed for developing the plugins and building them.
+KeywordPlugin -api is located in server folder, under lib.
 
-SampleAPI can be used for developing Java-based client to communicate with server. 
+SampleAPI for client is located in client folder, under lib.

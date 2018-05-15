@@ -24,8 +24,13 @@ Client can be anything, if it supports the protocol below, and uses TCP/IP proto
 **Client to server Json:**
 
  Current version
-* Number of WordsForModule object lists is amount of modules
-* Each module has own list of targets, clear individual trackables
+* Each WordsForModule object presents one module what server is supporting
+* Each module has own list of targets, and trackables for each target. Trackable could be keyword for e example.
+* ExtraInfo represents they way to describe or identify the target from other targets (eg. imaginary Twitter module will need profile name for example, Directory needs filepath)
+
+Command can be 1 or 2
+ 1. Change trackables to be followed
+ 2. Get trackables what server has recorded from you
 
 ```javascript
 {
@@ -50,14 +55,18 @@ Client can be anything, if it supports the protocol below, and uses TCP/IP proto
   ]
 }
 ```
-Command can be 1 or 2
- 1. Change trackables to be followed
- 2. Get trackables what server has recorded from you
-
-ExtraInfo is info needed for different module (eg. imaginary Twitter module will need Url, Directory needs filepath)
-
 
 **Server to client Json:**
+
+Server lists information of each module to client, giving a detailed description and usage of module for client.
+Current followed trackables for each followed target will represented for client.
+
+
+ResponseType can be 1, 2, 3 and 4
+ 1. Change succeed
+ 2. Giving detailed list of words in watch list
+ 3. Trackable found
+ 4. Error
 
 ```javascript
 {
@@ -118,9 +127,20 @@ ExtraInfo is info needed for different module (eg. imaginary Twitter module will
 }
 ```
 
-ResponseType can be 1, 2, 3 and 4
- 1. Change succeed
- 2. Giving detailed list of words in watch list
- 3. Trackable found
- 4. Error
- 
+
+## API for making plugins
+
+Source file for plugin API can be found from [here.](/KeywordPlugin/src/org/keyword/plugin/KeywordPlugin.java)
+
+Plugins have to implement interface to be eligible to work as plugin.
+Class FailedToDoPluginThing is not necessary, as class defined in interface is enough for functionality.
+
+## Clients?
+Any client which will follow the JSON protocol above, and is using TCP/IP connection  is able to use server for tracking things.
+
+## Building
+buildall scripts will build all sources to path [build](/build).
+ExampleServer and ExampleClient are ready  to go.
+Libs/plugins have been created/copied to correct folders.
+
+.sh script is not tested, but theorically should work..

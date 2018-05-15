@@ -1,6 +1,6 @@
 mkdir bin
-javac src\org\anttijuustila\keywordserver\*.java -classpath "..\json-simple-1.1.1.jar;." -d bin
+javac src\org\anttijuustila\keywordserver\*.java -classpath "..\libs\json-simple-1.1.1.jar;..\libs\KeywordPlugin.jar;" -d bin
 cd bin
-jar cvf KeywordServer.jar org\anttijuustila\keywordserver\*.class
+jar -cvfm KeywordServer.jar ..\src\META-INF\MANIFEST.MF org\anttijuustila\keywordserver\*.class  
 exit
 
