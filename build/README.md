@@ -16,3 +16,5 @@ java -jar KeywordClient.jar
 KeywordPlugin -api is located in server folder, under lib.
 
 SampleAPI for client is located in client folder, under lib.
+
+By adding DEBUG as command line parameter, SampleAPI will print addional details.
