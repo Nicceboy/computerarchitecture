@@ -1,6 +1,7 @@
 # README #
 
-This Repository is about to present custom implementation of example provided on University of Oulu, by Antti Juustila, in the course 'Software Architecture'.
+This Repository is about to present custom implementation of example provided on University of Oulu, by Antti Juustila, in the course 'Software Architecture' in the past. Looks like course has new topic with other programming language nowdays, and this source code can be made public.
+
 Original repository can be found [here.](https://bitbucket.org/anttijuu/keywords)
 
 Repository contains Application that presents a Server, which supports plugins. Plugins can be anything, what can make you to track something special.
